@@ -1,0 +1,19 @@
+<html>
+<head>
+	<link rel="stylesheet" type="text/css" href="./RRGva.css"></link>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.9.4/cytoscape.min.js"></script>
+	<script src="cytoscape-node-html-label.js"></script>
+	<script type="text/javascript" src="./RRGva.js"></script>
+</head>
+<body>
+	<!-- container for text inpt-->
+	<div id="main_text">
+		<textarea id="text_input" rows="2" cols="100" placeholder="enter your sentence here...">Mary built a house</textarea>
+		<input type="button" onclick="loadText()" value="display"></input>
+	</div>
+	
+	<!-- container for graph -->
+	<div id="cy"></div>
+</body>
+</html>

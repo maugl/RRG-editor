@@ -1,0 +1,17 @@
+#cy {
+	margin: auto;
+	width: 50%;
+	height: 80%;
+	display: block;
+	border: 1px solid black;
+}
+
+#main_text {
+	margin: auto;
+	display: block;
+	width: 50%;
+}
+
+.nodeInputWrapper {
+	visibility: hidden;
+}
