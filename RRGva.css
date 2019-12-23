@@ -12,6 +12,6 @@
 	width: 50%;
 }
 
-.nodeInputWrapper {
-	visibility: hidden;
+.nodeTextInputContainer{
+	position: absolute;
 }

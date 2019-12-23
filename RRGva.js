@@ -4,6 +4,7 @@ $( document ).ready(function(){
 
 var cy;
 var dragoutToggle = false;
+var inTextEditMode = false;
 var lastClickTime;
 var lastClickedNode;
 
@@ -25,16 +26,7 @@ function onLoad(){
 			}
 		]
 	});
-	cy.nodeHtmlLabel([{
-        query: 'node',
-        valign: 'center',
-        halign: 'center',
-        valignBox: 'center',
-        halignBox: 'center',
-        tpl: function(data) {
-            return '<input type="text" class="nodeInputWrapper" id=label-' + data.id + '></input>';
-        }
-    }]);
+
 	addEventListeners();
 }
 
@@ -68,9 +60,32 @@ function addEdgeToCy(source, target){
 	return cy.add(edge);
 }
 
+// opens a text input field for changing a Nodes Name
+// TODO clean up function (extract duplicate code and add comments)
+// TODO fix focusout when trying to edit with mouse in text field
 function openTextChange(node){
-	document.getElementById("label-" + node.id()).style.visibility = "visible";
-	//alert(document.getElementById("label-" + node.id()).style.visibility);
+	inTextEditMode = true;
+	nodeTextInput = $("<input></input>").attr("type", "text").attr("id", "nodeTextInput").attr("value", node.data("name")).width((25 > node.renderedWidth()) ? 25 : node.renderedWidth());
+	nodeTextInput.focusout(function(){
+			node.data("name", this.value);
+			inTextEditMode = false;
+			this.parentElement.remove();
+	});
+	nodeTextInput.keyup(function(e){
+		if(e.keyCode == 13){
+			node.data("name", this.value);
+			inTextEditMode = false;
+			this.parentElement.remove();
+		}
+	});
+	
+	// add div element for positioning purposes
+	nodeTextDiv = $('<div></div>').append(nodeTextInput);
+	nodeTextDiv.addClass("nodeTextInputContainer");
+	nodeTextDiv.appendTo("#cy");
+	nodeTextDiv.css("top", node.renderedPosition("y") - nodeTextDiv.height()/2);
+	nodeTextDiv.css("left", node.renderedPosition("x") - node.renderedWidth()/2);
+	$("#nodeTextInput").focus();
 }
 
 /* event listeners */
@@ -94,7 +109,7 @@ function addEventListeners(){
 	
 	// detect if "del" is pressed on an element of the graph
 	$(document).on("keydown", function(event){
-		if(event.which == 46){
+		if(event.which == 46 && !inTextEditMode){
 			cy.$(':selected').remove();
 		}
 	});
