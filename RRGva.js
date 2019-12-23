@@ -98,7 +98,7 @@ function addEventListeners(){
 	cy.on('cxttapend', 'node', function(event){
 		if(dragoutToggle){
 			var node = event.target;
-			var position = event.position;
+			var position = event.renderedPosition;
 			//alert("x: " + position.x + " - y: " + position.y);
 			newNode = addNodeToCy("newNode", "", position.x, position.y);
 			addEdgeToCy(node.id(), newNode.id())
