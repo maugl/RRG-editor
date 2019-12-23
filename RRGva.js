@@ -65,16 +65,20 @@ function addEdgeToCy(source, target){
 // TODO fix focusout when trying to edit with mouse in text field
 function openTextChange(node){
 	inTextEditMode = true;
+	cy.userPanningEnabled(false);
 	nodeTextInput = $("<input></input>").attr("type", "text").attr("id", "nodeTextInput").attr("value", node.data("name")).width((25 > node.renderedWidth()) ? 25 : node.renderedWidth());
+	// add triggers for exiting edit mode
 	nodeTextInput.focusout(function(){
 			node.data("name", this.value);
 			inTextEditMode = false;
+			cy.userPanningEnabled(true);
 			this.parentElement.remove();
 	});
 	nodeTextInput.keyup(function(e){
 		if(e.keyCode == 13){
 			node.data("name", this.value);
 			inTextEditMode = false;
+			cy.userPanningEnabled(true);
 			this.parentElement.remove();
 		}
 	});
