@@ -1,10 +1,14 @@
+//TODO sometimes right-click-drag off node does not work...
+
 $( document ).ready(function(){
 	onLoad();
 });
 
 var cy;
 var dragoutToggle = false;
+var dragOverNode = undefined;
 var inTextEditMode = false;
+// globals for detecting double click on a node
 var lastClickTime;
 var lastClickedNode;
 
@@ -63,12 +67,14 @@ function addEdgeToCy(source, target){
 // opens a text input field for changing a Nodes Name
 // TODO clean up function (extract duplicate code and add comments)
 // TODO fix focusout when trying to edit with mouse in text field
+// resize does not work if "" is entered
+// TODO recalculate box??? (maybe not needed if box is not shown...) -> boxes are recalculated when clicking anywhere in the canvas
 function openTextChange(node){
 	inTextEditMode = true;
 	cy.userPanningEnabled(false);
 	nodeTextInput = $("<input></input>").attr("type", "text").attr("id", "nodeTextInput").attr("value", node.data("name")).width((25 > node.renderedWidth()) ? 25 : node.renderedWidth());
 	// add triggers for exiting edit mode
-	nodeTextInput.focusout(function(){
+	nodeTextInput.blur(function(){
 			node.data("name", this.value);
 			inTextEditMode = false;
 			cy.userPanningEnabled(true);
@@ -89,19 +95,28 @@ function openTextChange(node){
 	nodeTextDiv.appendTo("#cy");
 	nodeTextDiv.css("top", node.renderedPosition("y") - nodeTextDiv.height()/2);
 	nodeTextDiv.css("left", node.renderedPosition("x") - node.renderedWidth()/2);
-	$("#nodeTextInput").focus();
+	// take this into account if optimizing for mobile safari (https://stackoverflow.com/questions/4067469/selecting-all-text-in-html-text-input-when-clicked)
+	$("#nodeTextInput").focus().select();
 }
 
 /* event listeners */
 function addEventListeners(){
-	// create new node by right click dragging of a node
+	// create new node / edge by right click dragging off a node
 	cy.on('cxttapend', 'node', function(event){
 		if(dragoutToggle){
 			var node = event.target;
-			var position = event.renderedPosition;
-			//alert("x: " + position.x + " - y: " + position.y);
-			newNode = addNodeToCy("newNode", "", position.x, position.y);
-			addEdgeToCy(node.id(), newNode.id())
+			// create edge
+			if(dragOverNode){
+				addEdgeToCy(node.id(), dragOverNode.id());
+			}
+			// create new Node
+			else{
+				var position = event.renderedPosition;
+				//detect if end of drag is on node, then create edge, else create new node
+
+				newNode = addNodeToCy("newNode", "", position.x, position.y);
+				addEdgeToCy(node.id(), newNode.id());
+			}
 		}
 	});
 	cy.on('cxttapstart', 'node', function(event){
@@ -109,20 +124,33 @@ function addEventListeners(){
 	});
 	cy.on('cxtdragout', 'node', function(event){
 		dragoutToggle = true;
+		dragOverNode = undefined;
+	});
+	cy.on('cxtdragover', 'node', function(event){
+		dragOverNode = event.target;
 	});
 	
-	// detect if "del" is pressed on an element of the graph
+	
 	$(document).on("keydown", function(event){
-		if(event.which == 46 && !inTextEditMode){
-			cy.$(':selected').remove();
+		switch(event.which){
+			// detect if "del" is pressed on an element of the graph
+			case 46:
+				if(!inTextEditMode){
+					cy.$(':selected').remove();
+				}
+				break;
+			default:
+				break;
 		}
 	});
-	
-	// change node text
+
+	// detect double click or single click with alt
 	cy.on('tap', 'node', function(event){
+		//detect double click
 		var curTime = Date.now();
 		var curNode = event.target;
 		if(curTime - lastClickTime < 500 && curNode == lastClickedNode){
+			// double clicked node
 			openTextChange(curNode);
 		}
 		lastClickTime = curTime;
