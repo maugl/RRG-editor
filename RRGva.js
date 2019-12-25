@@ -43,6 +43,7 @@ function readTextArea(elm){
 	for(var i = 0; i < sentence.length; i++){
 		addNodeToCy(sentence[i], i);
 	}
+	cy.center();
 }
 
 function addNodeToCy(nodeText, nodeId, x, y){
