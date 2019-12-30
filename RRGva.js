@@ -4,6 +4,8 @@ $( document ).ready(function(){
 	onLoad();
 });
 
+
+// TODO wrap all the global variables into runtime/environment object
 var cy;
 var dragoutToggle = false;
 var dragOverNode = undefined;
@@ -11,6 +13,8 @@ var inTextEditMode = false;
 // globals for detecting double click on a node
 var lastClickTime;
 var lastClickedNode;
+// defines node spacing in increments of the step (can be used for snapToGrid grid size as well)
+var NODE_SPACING_STEP = 40;
 
 function onLoad(){
 	cy = cytoscape({
@@ -19,19 +23,31 @@ function onLoad(){
 			{
 				selector: 'node.base',
 				style: {
-					shape: 'round-rectangle',
+					shape: 'rectangle',					
 					label: 'data(name)',
+					'background-color': 'white',
 					'text-halign': 'center',
 					'text-valign': 'center',
 					'width': 'label',
 					'height': 'label',
 					'padding': '5, 0, 5, 0'
 				}
+			},
+			{
+				selector: 'node.base:selected',
+				style: {
+					'border-width': '1px',
+					'border-style': 'solid',
+					'border-color': 'black'
+				}
 			}
 		]
 	});
-
+	
 	addEventListeners();
+	// snap to grid: makes graph be positioned along a grid
+	cy.snapToGrid();
+	executeSnapGrid(false);
 }
 
 function loadText(){
@@ -48,7 +64,7 @@ function readTextArea(elm){
 
 function addNodeToCy(nodeText, nodeId, x, y){
 	if(x == undefined) x = 100 + nodeId * 100;
-	if(y == undefined) y = 250;
+	if(y == undefined) y = 0;
 	node = 	{ // node" +
 				data: {name: nodeText},
 				renderedPosition: { x: x, y: y},
@@ -65,6 +81,35 @@ function addEdgeToCy(source, target){
 	return cy.add(edge);
 }
 
+/* layout */
+
+// enable/disable snap to grid for clean graphs
+function executeSnapGrid(state){
+	if(state){
+		cy.snapToGrid('snapOn');
+		cy.snapToGrid('gridOn');
+	}
+	else{
+		cy.snapToGrid('snapOff');
+		cy.snapToGrid('gridOff');
+	}
+}
+
+/* export */
+
+function saveToJPG(){
+	cy.$().unselect();
+	boundingBox = cy.$().bb();
+	jpg_options={
+		'full': 'true'
+	};
+	var download = document.createElement('a');
+	download.href = cy.jpg(jpg_options);
+	download.download = "RRG_Graph.jpg";
+	download.click();
+}
+
+
 // opens a text input field for changing a Nodes Name
 // TODO clean up function (extract duplicate code and add comments)
 // TODO fix focusout when trying to edit with mouse in text field
@@ -80,13 +125,11 @@ function openTextChange(node){
 			inTextEditMode = false;
 			cy.userPanningEnabled(true);
 			this.parentElement.remove();
+			cy.resize();
 	});
 	nodeTextInput.keyup(function(e){
-		if(e.keyCode == 13){
-			node.data("name", this.value);
-			inTextEditMode = false;
-			cy.userPanningEnabled(true);
-			this.parentElement.remove();
+		if(e.which == 13){
+			this.blur();
 		}
 	});
 	
@@ -105,6 +148,7 @@ function addEventListeners(){
 	// create new node / edge by right click dragging off a node
 	cy.on('cxttapend', 'node', function(event){
 		if(dragoutToggle){
+			//detect if end of drag is on node, then create edge, else create new node
 			var node = event.target;
 			// create edge
 			if(dragOverNode){
@@ -113,10 +157,10 @@ function addEventListeners(){
 			// create new Node
 			else{
 				var position = event.renderedPosition;
-				//detect if end of drag is on node, then create edge, else create new node
-
 				newNode = addNodeToCy("newNode", "", position.x, position.y);
 				addEdgeToCy(node.id(), newNode.id());
+				cy.$().unselect();
+				newNode.select();
 			}
 		}
 	});
