@@ -14,8 +14,20 @@
 		<input type="checkbox" onchange="executeSnapGrid(this.checked)">snap to grid control</input>
 		<input type="button" onclick="saveToJPG()" value="export JPG"></input>
 	</div>
-	
-	<!-- container for graph -->
-	<div id="cy"></div>
+
+	<table id="main_container">
+		<tr>
+			<td class="table_shelf">
+				<div id="left_shelf" class="shelf"></div>
+			</td>	
+			<td class="table_center">
+				<!-- container for graph -->
+				<div id="cy"></div>
+			</td>
+			<td class="table_shelf">
+				<div id="right_shelf" class="shelf"></div>
+			</td>
+		</tr>
+	</table>
 </body>
 </html>
