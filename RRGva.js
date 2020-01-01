@@ -48,10 +48,22 @@ function onLoad(){
 	// snap to grid: makes graph be positioned along a grid
 	cy.snapToGrid();
 	executeSnapGrid(false);
+	
+	//test shelf loading
+	var shelfLeftData = ['NP', 'V', 'PRED', 'SENTENCE', 'CLAUSE', 'CORE', 'NUC'];
+	loadShelfData($("#left_shelf"), shelfLeftData);
 }
 
 function loadText(){
 	readTextArea(document.getElementById("text_input"));
+}
+
+/** puts predefined nodes into shelves */
+function loadShelfData(shelfElm, data){
+	for(elm in data){
+		var div_elm = $("<div class='shelf_content' draggable='true'  ondragstart='drag(event)'>" + data[elm] + "</div>");
+		shelfElm.append(div_elm);
+	}
 }
 
 function readTextArea(elm){
@@ -174,8 +186,7 @@ function addEventListeners(){
 	cy.on('cxtdragover', 'node', function(event){
 		dragOverNode = event.target;
 	});
-	
-	
+
 	$(document).on("keydown", function(event){
 		switch(event.which){
 			// detect if "del" is pressed on an element of the graph
@@ -201,5 +212,23 @@ function addEventListeners(){
 		lastClickTime = curTime;
 		lastClickedNode = curNode;
 	});
+}
+
+/** DRAG AND DROP */
+/** source: https://www.w3schools.com/html/html5_draganddrop.asp */
+function allowDrop(ev) {
+  ev.preventDefault();
+}
+
+function drag(ev) {
+  ev.dataTransfer.setData("text", ev.target.innerHTML);
+}
+
+function drop(ev) {
+	ev.preventDefault();
+	var data = ev.dataTransfer.getData("text");
+	var renderedLeft = ev.clientX - $(cy.container()).position().left;
+	var renderedTop = ev.clientY - $(cy.container()).position().top;
+	addNodeToCy(data, "", renderedLeft, renderedTop)
 }
 

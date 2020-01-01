@@ -19,12 +19,12 @@
 }
 
 .table_shelf{
-	width: 25%;
+	width: 15%;
 	padding: 0px;
 }
 
 .table_center{
-	width: 50%;
+	width: 70%;
 	padding: 0px;
 }
 
@@ -37,4 +37,10 @@
 	border: 1px solid black;
 	width: 100%;
 	height: 100%;
+}
+
+.shelf_content{
+	border: 1px black solid;
+	width: auto;
+	cursor: move;
 }
