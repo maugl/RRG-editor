@@ -37,10 +37,21 @@
 	border: 1px solid black;
 	width: 100%;
 	height: 100%;
+	overflow-y: auto;
 }
 
 .shelf_content{
 	border: 1px black solid;
 	width: auto;
 	cursor: move;
+}
+
+.shelf_group_header{
+	background-color: darkgrey;
+	border: 1px black solid;
+	color: white;
+}
+
+.shelf_group_content{
+	background-color: grey;
 }

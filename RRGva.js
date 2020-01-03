@@ -13,8 +13,6 @@ var inTextEditMode = false;
 // globals for detecting double click on a node
 var lastClickTime;
 var lastClickedNode;
-// defines node spacing in increments of the step (can be used for snapToGrid grid size as well)
-var NODE_SPACING_STEP = 40;
 
 function onLoad(){
 	cy = cytoscape({
@@ -38,7 +36,8 @@ function onLoad(){
 				style: {
 					'border-width': '1px',
 					'border-style': 'solid',
-					'border-color': 'black'
+					'border-color': 'black',
+					'background-color': 'lightgrey'
 				}
 			}
 		]
@@ -51,7 +50,9 @@ function onLoad(){
 	
 	//test shelf loading
 	var shelfLeftData = ['NP', 'V', 'PRED', 'SENTENCE', 'CLAUSE', 'CORE', 'NUC'];
-	loadShelfData($("#left_shelf"), shelfLeftData);
+	loadShelfData("Syntactic", $("#left_shelf"), shelfLeftData);
+	var shelfLeftData2 = ['IF', 'TNS', 'ASP', 'MOD', 'NEG', 'STA'];
+	loadShelfData("Operators", $("#left_shelf"), shelfLeftData2);
 }
 
 function loadText(){
@@ -59,13 +60,19 @@ function loadText(){
 }
 
 /** puts predefined nodes into shelves */
-function loadShelfData(shelfElm, data){
+function loadShelfData(group, shelfElm, data){
+	if (group === ""){
+		group = "default";	
+	}
+	var shelfGroupHeader = $('<div>' + group + '</div>').attr("class", "shelf_group_header")
+	var shelfGroupContainer = $('<div></div>').attr("class", "shelf_group_container").append(shelfGroupHeader).appendTo(shelfElm);
 	for(elm in data){
-		var div_elm = $("<div class='shelf_content' draggable='true'  ondragstart='drag(event)'>" + data[elm] + "</div>");
-		shelfElm.append(div_elm);
+		var div_elm = $("<div draggable='true' ondragstart='drag(event)'>" + data[elm] + "</div>").attr("class", "shelf_content");
+		shelfGroupContainer.append(div_elm);
 	}
 }
 
+/** reads text from input text area, splits by whitespace and puts split parts into graph */
 function readTextArea(elm){
 	var sentence = elm.value.split(" ");
 	for(var i = 0; i < sentence.length; i++){
@@ -74,6 +81,7 @@ function readTextArea(elm){
 	cy.center();
 }
 
+/** adds a node to the graph with specified "name", id and position */
 function addNodeToCy(nodeText, nodeId, x, y){
 	if(x == undefined) x = 100 + nodeId * 100;
 	if(y == undefined) y = 0;
@@ -85,6 +93,7 @@ function addNodeToCy(nodeText, nodeId, x, y){
 	return cy.add(node);
 }
 
+/** adds an edge to the graph between two nodes */
 function addEdgeToCy(source, target){
 	edge = { 	group: 'edges',
 				data: { source: source,
@@ -155,7 +164,7 @@ function openTextChange(node){
 	$("#nodeTextInput").focus().select();
 }
 
-/* event listeners */
+/** event listeners */
 function addEventListeners(){
 	// create new node / edge by right click dragging off a node
 	cy.on('cxttapend', 'node', function(event){
@@ -187,6 +196,19 @@ function addEventListeners(){
 		dragOverNode = event.target;
 	});
 
+	// detect double click or single click with alt
+	cy.on('tap', 'node', function(event){
+		//detect double click
+		var curTime = Date.now();
+		var curNode = event.target;
+		if(curTime - lastClickTime < 500 && curNode == lastClickedNode){
+			// double clicked node
+			openTextChange(curNode);
+		}
+		lastClickTime = curTime;
+		lastClickedNode = curNode;
+	});
+
 	$(document).on("keydown", function(event){
 		switch(event.which){
 			// detect if "del" is pressed on an element of the graph
@@ -200,17 +222,8 @@ function addEventListeners(){
 		}
 	});
 
-	// detect double click or single click with alt
-	cy.on('tap', 'node', function(event){
-		//detect double click
-		var curTime = Date.now();
-		var curNode = event.target;
-		if(curTime - lastClickTime < 500 && curNode == lastClickedNode){
-			// double clicked node
-			openTextChange(curNode);
-		}
-		lastClickTime = curTime;
-		lastClickedNode = curNode;
+	$('.shelf').on("click", ".shelf_group_header", function(event){
+		$(event.target).siblings().toggle();
 	});
 }
 
