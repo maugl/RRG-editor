@@ -9,12 +9,16 @@
 <body>
 	<!-- container for text inpt-->
 	<div id="main_text">
-		<textarea id="text_input" rows="2" cols="100" placeholder="enter your sentence here...">Mary built a house</textarea><br />
-		<input type="button" onclick="loadText()" value="display"></input>
-		<input type="checkbox" onchange="executeSnapGrid(this.checked)">snap to grid control</input>
-		<input type="button" onclick="saveToJPG()" value="export JPG"></input>
+		<textarea id="text_input" rows="1" placeholder="enter your sentence here...">Mary built a house</textarea>
+		<input type="button" onclick="loadText()" value="display"></input><br />
 	</div>
-
+	
+	<div id="toolbar_container">
+		<div id="toolbar"> 
+			<input type="checkbox" onchange="executeSnapGrid(this.checked)">snap to grid control</input>
+			<input type="button" onclick="saveToJPG()" value="export JPG"></input>
+		</div>
+	</div>
 	<table id="main_container">
 		<tr>
 			<td class="table_shelf">

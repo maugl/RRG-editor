@@ -53,7 +53,7 @@ function onLoad(){
 	//test shelf loading
 	//TODO json/JS-object format for shelf contents (use json format of cytoscape)
 	var shelfLeftData = ['NP', 'V', 'PRED', 'SENTENCE', 'CLAUSE', 'CORE', 'NUC'];
-	loadShelfData("Syntactic", $("#left_shelf"), shelfLeftData);
+	loadShelfData("Layered Structure", $("#left_shelf"), shelfLeftData);
 	var shelfLeftData2 = ['IF', 'TNS', 'ASP', 'MOD', 'NEG', 'STA'];
 	loadShelfData("Operators", $("#left_shelf"), shelfLeftData2);
 }
@@ -82,10 +82,10 @@ function readTextArea(elm){
 	for(var i = 0; i < sentence.length; i++){
 		var YPos = 0;
 		curNode = addNodeToCy(sentence[i], 0, YPos);
-		XPos = XPos + curNode.renderedWidth()/2;
-		curNode.renderedPosition("x", XPos);
+		XPos = XPos + curNode.width()/2;
+		curNode.position("x", XPos);
 		// calculate next node position
-		XPos = XPos + X_NODE_SPACING + curNode.renderedWidth()/2;
+		XPos = XPos + X_NODE_SPACING + curNode.width()/2;
 	}
 	cy.center();
 }
@@ -187,7 +187,7 @@ function addEventListeners(){
 			// create new Node
 			else{
 				var position = event.renderedPosition;
-				newNode = addNodeToCy("newNode", "", position.x, position.y);
+				newNode = addNodeToCy("newNode", position.x, position.y);
 				addEdgeToCy(node.id(), newNode.id());
 				cy.$().unselect();
 				newNode.select();
@@ -251,6 +251,6 @@ function drop(ev) {
 	var data = ev.dataTransfer.getData("text");
 	var renderedLeft = ev.clientX - $(cy.container()).position().left;
 	var renderedTop = ev.clientY - $(cy.container()).position().top;
-	addNodeToCy(data, "", renderedLeft, renderedTop)
+	addNodeToCy(data, renderedLeft, renderedTop)
 }
 
