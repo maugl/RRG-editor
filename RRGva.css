@@ -9,13 +9,14 @@
 #main_text {
 	margin: auto;
 	display: block;
-	width: 50%;
+	width: 70%;
 }
 
 #main_container{
 	width: 100%;
 	height: 80%;
 	table-layout: fixed;
+	border-collapse: collapse;
 }
 
 .table_shelf{

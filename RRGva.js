@@ -13,6 +13,8 @@ var inTextEditMode = false;
 // globals for detecting double click on a node
 var lastClickTime;
 var lastClickedNode;
+// global constant for spacing new nodes horizontally
+var X_NODE_SPACING = 80;
 
 function onLoad(){
 	cy = cytoscape({
@@ -49,6 +51,7 @@ function onLoad(){
 	executeSnapGrid(false);
 	
 	//test shelf loading
+	//TODO json/JS-object format for shelf contents (use json format of cytoscape)
 	var shelfLeftData = ['NP', 'V', 'PRED', 'SENTENCE', 'CLAUSE', 'CORE', 'NUC'];
 	loadShelfData("Syntactic", $("#left_shelf"), shelfLeftData);
 	var shelfLeftData2 = ['IF', 'TNS', 'ASP', 'MOD', 'NEG', 'STA'];
@@ -59,7 +62,7 @@ function loadText(){
 	readTextArea(document.getElementById("text_input"));
 }
 
-/** puts predefined nodes into shelves */
+/** puts predefined tags into shelves */
 function loadShelfData(group, shelfElm, data){
 	if (group === ""){
 		group = "default";	
@@ -67,7 +70,7 @@ function loadShelfData(group, shelfElm, data){
 	var shelfGroupHeader = $('<div>' + group + '</div>').attr("class", "shelf_group_header")
 	var shelfGroupContainer = $('<div></div>').attr("class", "shelf_group_container").append(shelfGroupHeader).appendTo(shelfElm);
 	for(elm in data){
-		var div_elm = $("<div draggable='true' ondragstart='drag(event)'>" + data[elm] + "</div>").attr("class", "shelf_content");
+		var div_elm = $("<div>" + data[elm] + "</div>").attr("class", "shelf_content").attr("draggable", "true").attr("ondragstart", "drag(event)");
 		shelfGroupContainer.append(div_elm);
 	}
 }
@@ -75,15 +78,21 @@ function loadShelfData(group, shelfElm, data){
 /** reads text from input text area, splits by whitespace and puts split parts into graph */
 function readTextArea(elm){
 	var sentence = elm.value.split(" ");
+	var XPos = 0;
 	for(var i = 0; i < sentence.length; i++){
-		addNodeToCy(sentence[i], i);
+		var YPos = 0;
+		curNode = addNodeToCy(sentence[i], 0, YPos);
+		XPos = XPos + curNode.renderedWidth()/2;
+		curNode.renderedPosition("x", XPos);
+		// calculate next node position
+		XPos = XPos + X_NODE_SPACING + curNode.renderedWidth()/2;
 	}
 	cy.center();
 }
 
 /** adds a node to the graph with specified "name", id and position */
-function addNodeToCy(nodeText, nodeId, x, y){
-	if(x == undefined) x = 100 + nodeId * 100;
+function addNodeToCy(nodeText, x, y){
+	if(x == undefined) x = 100;
 	if(y == undefined) y = 0;
 	node = 	{ // node" +
 				data: {name: nodeText},
