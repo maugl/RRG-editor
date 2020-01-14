@@ -41,6 +41,42 @@ function onLoad(){
 					'border-color': 'black',
 					'background-color': 'lightgrey'
 				}
+			},
+			//edges
+			{
+				selector: 'edge',
+				style: {
+					'line-color': 'black',
+					'width': 3,
+				}
+			},
+			{
+				selector: 'edge:selected',
+				style: {
+					'line-color': 'blue',
+				}
+			},
+			{
+				selector: 'edge.operator',
+				style: {
+					'line-style': 'dashed',
+					'line-dash-pattern': [2,4]
+				}
+			},
+			{
+				selector: 'edge.arrow',
+				style: {
+					'curve-style': 'bezier',
+					'target-arrow-color': 'black',
+					'target-arrow-shape': 'vee',
+					'arrow-scale': 2
+				}
+			},
+						{
+				selector: 'edge.arrow:selected',
+				style: {
+					'target-arrow-color': 'blue',
+				}
 			}
 		]
 	});
@@ -111,6 +147,13 @@ function addEdgeToCy(source, target){
 	return cy.add(edge);
 }
 
+/* tools */
+
+function changeEdgeType(type){
+	cy.$('edge:selected').toggleClass(type);
+}
+
+
 /* layout */
 
 // enable/disable snap to grid for clean graphs
@@ -124,6 +167,8 @@ function executeSnapGrid(state){
 		cy.snapToGrid('gridOff');
 	}
 }
+
+
 
 /* export */
 
