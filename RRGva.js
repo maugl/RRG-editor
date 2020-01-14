@@ -15,7 +15,10 @@ var lastClickTime;
 var lastClickedNode;
 // global constant for spacing new nodes horizontally
 var X_NODE_SPACING = 80;
+// global constant with edge states/classes for switching edge types
+var EDGE_TYPES_SWITCH = {current: ['base', 'operator', 'arrow_target', 'arrow_source'], next:['operator', 'arrow_target', 'arrow_source', 'base']};
 
+//TODO export cytoscape style to separate json file
 function onLoad(){
 	cy = cytoscape({
 		container: document.getElementById('cy'), // container to render in
@@ -64,20 +67,35 @@ function onLoad(){
 				}
 			},
 			{
-				selector: 'edge.arrow',
+				selector: 'edge.arrow_target',
 				style: {
 					'curve-style': 'bezier',
+					'arrow-scale': 2,
 					'target-arrow-color': 'black',
-					'target-arrow-shape': 'vee',
-					'arrow-scale': 2
+					'target-arrow-shape': 'vee'
 				}
 			},
-						{
-				selector: 'edge.arrow:selected',
+			{
+				selector: 'edge.arrow_source',
+				style: {
+					'curve-style': 'bezier',
+					'arrow-scale': 2,
+					'source-arrow-color': 'black',
+					'source-arrow-shape': 'vee'
+				}
+			},
+			{
+				selector: 'edge.arrow_target:selected',
 				style: {
 					'target-arrow-color': 'blue',
 				}
-			}
+			},
+			{
+				selector: 'edge.arrow_source:selected',
+				style: {
+					'source-arrow-color': 'blue'
+				}
+			},
 		]
 	});
 	
@@ -120,7 +138,7 @@ function readTextArea(elm){
 		curNode = addNodeToCy(sentence[i], 0, YPos);
 		XPos = XPos + curNode.width()/2;
 		curNode.position("x", XPos);
-		// calculate next node position
+		// calculate next node position using the current node for next node position to get even spacing on center
 		XPos = XPos + X_NODE_SPACING + curNode.width()/2;
 	}
 	cy.center();
@@ -142,15 +160,24 @@ function addNodeToCy(nodeText, x, y){
 function addEdgeToCy(source, target){
 	edge = { 	group: 'edges',
 				data: { source: source,
-				target: target }
+				target: target },
+				classes: ['base']
 			}
 	return cy.add(edge);
 }
 
-/* tools */
-
-function changeEdgeType(type){
-	cy.$('edge:selected').toggleClass(type);
+/* functions for tools in the toolbar */
+/** switch through the edge types for a selected edge */
+function switchEdgeType(){
+	cy.$('edge:selected').each(function(edge, j, edges){
+		for(let i = 0; i < EDGE_TYPES_SWITCH.current.length; i++){
+			edge_class = EDGE_TYPES_SWITCH.current[i];
+			if(edge.hasClass(edge_class)){
+				edge.removeClass(edge_class).addClass(EDGE_TYPES_SWITCH.next[i]);
+				break;
+			}
+		}
+	});
 }
 
 
