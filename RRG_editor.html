@@ -17,7 +17,9 @@
 		<div id="toolbar"> 
 			<input type="checkbox" onchange="executeSnapGrid(this.checked)">snap to grid control</input>
 			<input type="button" onclick="saveToJPG()" value="export JPG"></input>
-			<input type="button" onclick="switchEdgeType()" value="switch edge type"></input>
+			<input id="edgeSwitch" type="button" onclick="switchEdgeType()" value="switch edge type" disabled></input>
+			<input id="templateSave" type="button" onclick="saveTemplate()" value="save template"></input>
+			
 		</div>
 	</div>
 	<table id="main_container">

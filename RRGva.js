@@ -70,7 +70,7 @@ function onLoad(){
 				selector: 'edge.arrow_target',
 				style: {
 					'curve-style': 'bezier',
-					'arrow-scale': 2,
+					'arrow-scale': 1,
 					'target-arrow-color': 'black',
 					'target-arrow-shape': 'vee'
 				}
@@ -79,7 +79,7 @@ function onLoad(){
 				selector: 'edge.arrow_source',
 				style: {
 					'curve-style': 'bezier',
-					'arrow-scale': 2,
+					'arrow-scale': 1,
 					'source-arrow-color': 'black',
 					'source-arrow-shape': 'vee'
 				}
@@ -105,11 +105,12 @@ function onLoad(){
 	executeSnapGrid(false);
 	
 	//test shelf loading
-	//TODO json/JS-object format for shelf contents (use json format of cytoscape)
+	//TODO json/JS-object format for shelf contents (maybe use json format of cytoscape)
 	var shelfLeftData = ['NP', 'V', 'PRED', 'SENTENCE', 'CLAUSE', 'CORE', 'NUC'];
 	loadShelfData("Layered Structure", $("#left_shelf"), shelfLeftData);
 	var shelfLeftData2 = ['IF', 'TNS', 'ASP', 'MOD', 'NEG', 'STA'];
 	loadShelfData("Operators", $("#left_shelf"), shelfLeftData2);
+	//TODO load templates
 }
 
 function loadText(){
@@ -146,7 +147,7 @@ function readTextArea(elm){
 
 /** adds a node to the graph with specified "name", id and position */
 function addNodeToCy(nodeText, x, y){
-	if(x == undefined) x = 100;
+	if(x == undefined) x = 0;
 	if(y == undefined) y = 0;
 	node = 	{ // node" +
 				data: {name: nodeText},
@@ -198,6 +199,22 @@ function executeSnapGrid(state){
 
 
 /* export */
+
+function saveTemplate(){
+	var graphExport = [];
+	cy.$(":selected").each(function(ele, i, eles){
+		var serialized = {
+			id: ele.id(),
+			classes: ele.classes(),
+			position: ele.position(),
+			group: ele.group(),
+			source: ele.data('source'),
+			target: ele.data('target'),
+		}
+		graphExport.push(serialized);
+	});
+	console.log(JSON.stringify(graphExport));
+}
 
 function saveToJPG(){
 	cy.$().unselect();
@@ -275,6 +292,14 @@ function addEventListeners(){
 	});
 	cy.on('cxtdragover', 'node', function(event){
 		dragOverNode = event.target;
+	});
+	cy.on('select', 'edge', function(event){
+		$("#edgeSwitch").prop('disabled', false);
+	});
+	cy.on('unselect', 'edge', function(event){
+		if(cy.$("edge:selected").length === 0){
+			$("#edgeSwitch").prop('disabled', true);
+		}
 	});
 
 	// detect double click or single click with alt
