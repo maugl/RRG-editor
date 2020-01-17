@@ -111,10 +111,25 @@ function onLoad(){
 	var shelfLeftData2 = ['IF', 'TNS', 'ASP', 'MOD', 'NEG', 'STA'];
 	loadShelfData("Operators", $("#left_shelf"), shelfLeftData2);
 	//TODO load templates
+	loadTemplateData();
 }
 
 function loadText(){
 	readTextArea(document.getElementById("text_input"));
+}
+
+/** load shelf data from js file */
+function loadTemplateData(){
+	for(var i = 0; i < Object.keys(templates).length; i++){
+		var groupName = Object.keys(templates)[i]
+		var group = templates[groupName];
+		var templateNames = [];
+		for(var j = 0; j < Object.keys(group).length; j++){
+			var templateName = Object.keys(group)[j];
+			templateNames.push(templateName);
+		loadShelfData(groupName, $("#right_shelf"), templateNames);
+		}
+	}	
 }
 
 /** puts predefined tags into shelves */
@@ -213,7 +228,8 @@ function saveTemplate(){
 		}
 		graphExport.push(serialized);
 	});
-	console.log(JSON.stringify(graphExport));
+	console.log(JSON.stringify(cy.$(":selected").jsons()));
+	//console.log(JSON.stringify(graphExport));
 }
 
 function saveToJPG(){
