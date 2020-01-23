@@ -339,11 +339,6 @@ function addEventListeners(){
 					cy.$(':selected').remove();
 				}
 				break;
-			case 'Backspace':
-				if(!inTextEditMode){
-					cy.$(':selected').remove();
-				}
-				break;
 			default:
 				break;
 		}
