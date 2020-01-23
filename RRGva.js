@@ -263,7 +263,7 @@ function openTextChange(node){
 			cy.resize();
 	});
 	nodeTextInput.keyup(function(e){
-		if(e.which == 13){
+		if(e.key == 'Enter'){
 			this.blur();
 		}
 	});
@@ -332,9 +332,14 @@ function addEventListeners(){
 	});
 
 	$(document).on("keydown", function(event){
-		switch(event.which){
-			// detect if "del" is pressed on an element of the graph
-			case 46:
+		switch(event.key){
+			// detect if "del"/"backspace" is pressed on an element of the graph
+			case 'Delete':
+				if(!inTextEditMode){
+					cy.$(':selected').remove();
+				}
+				break;
+			case 'Backspace':
 				if(!inTextEditMode){
 					cy.$(':selected').remove();
 				}
