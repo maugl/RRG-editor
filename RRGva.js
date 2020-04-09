@@ -1,4 +1,6 @@
 //TODO sometimes right-click-drag off node does not work...
+//TODO add triangle for summarizing tree under
+//TODO align to grid when inserting elms after it has been activated
 
 $( document ).ready(function(){
 	onLoad();
@@ -107,9 +109,9 @@ function onLoad(){
 	//test shelf loading
 	//TODO json/JS-object format for shelf contents (maybe use json format of cytoscape)
 	var shelfLeftData = ['NP', 'V', 'PRED', 'SENTENCE', 'CLAUSE', 'CORE', 'NUC'];
-	loadShelfData("Layered Structure", $("#left_shelf"), shelfLeftData);
+	loadShelfData("Layered Structure", $("#left_shelf"), shelfLeftData, false);
 	var shelfLeftData2 = ['IF', 'TNS', 'ASP', 'MOD', 'NEG', 'STA'];
-	loadShelfData("Operators", $("#left_shelf"), shelfLeftData2);
+	loadShelfData("Operators", $("#left_shelf"), shelfLeftData2, false);
 	//TODO load templates
 	loadTemplateData();
 }
@@ -127,20 +129,20 @@ function loadTemplateData(){
 		for(var j = 0; j < Object.keys(group).length; j++){
 			var templateName = Object.keys(group)[j];
 			templateNames.push(templateName);
-		loadShelfData(groupName, $("#right_shelf"), templateNames);
 		}
+		loadShelfData(groupName, $("#right_shelf"), templateNames, true);
 	}	
 }
 
 /** puts predefined tags into shelves */
-function loadShelfData(group, shelfElm, data){
+function loadShelfData(group, shelfElm, data, isTemplate){
 	if (group === ""){
 		group = "default";	
 	}
 	var shelfGroupHeader = $('<div>' + group + '</div>').attr("class", "shelf_group_header")
 	var shelfGroupContainer = $('<div></div>').attr("class", "shelf_group_container").append(shelfGroupHeader).appendTo(shelfElm);
 	for(elm in data){
-		var div_elm = $("<div>" + data[elm] + "</div>").attr("class", "shelf_content").attr("draggable", "true").attr("ondragstart", "drag(event)");
+		var div_elm = $("<div>" + data[elm] + "</div>").attr("class", "shelf_content").attr("draggable", "true").attr("ondragstart", "drag(event, '" + group + "', " + isTemplate + ")");
 		shelfGroupContainer.append(div_elm);
 	}
 }
@@ -182,6 +184,99 @@ function addEdgeToCy(source, target){
 	return cy.add(edge);
 }
 
+/** adds a template to the graph */
+// TODO fix bug where edges are not shown when inserting template
+function displayTemplate(templateName, groupName, renderedLeft, renderedTop){
+	var templateJSON = templates[groupName][templateName];
+	var templateObject = JSON.parse(templateJSON);
+	
+	$(templateObject).each(function(ind, elm){
+		//check if IDs exist
+		var oldID = elm["data"]["id"];
+		if(cy.$("#" + oldID).length > 0){
+			console.log(oldID);
+			//generate new ID
+			var newID = (Math.random()*1e19).toString(36);
+			//replace with new ID
+			$(templateObject).each(function(i, e){
+				if(e["group"] == "nodes" && e["data"]["id"] == oldID){
+					e["data"]["id"] = newID;
+				}
+				if(e["group"] == "edges"){
+					if(e["data"]["id"] == oldID){
+						e["data"]["id"] = newID;
+					}
+					if(e["data"]["source"] == oldID){
+						e["data"]["source"] = newID;
+					}
+					if(e["data"]["target"] == oldID){
+						e["data"]["target"] = newID;
+					}
+				}
+			});
+		}
+	});
+	
+	//insert object into graph
+	cy.$().unselect();
+	var newObjects = cy.add(templateObject);
+	
+	//recalculate positions
+
+	// get old center of all nodes
+	var newBB = newObjects.renderedBoundingBox();
+	
+	var sourceX = newBB.x1 + newBB.h/2;
+	var sourceY = newBB.y1 + newBB.w/2;
+	
+	// calculate factors to move nodes by
+	var difX = sourceX - renderedLeft;
+	var difY = sourceY - renderedTop;
+	
+	/* debug data
+	console.log("sourceX");
+	console.log(sourceX);
+	console.log("sourceY");
+	console.log(sourceY);
+	
+	console.log("renderedLeft");
+	console.log(renderedLeft);
+	
+	console.log("renderedTop");
+	console.log(renderedTop);
+	
+	console.log("difX");
+	console.log(difX);
+	console.log("difY");
+	console.log(difY);
+	*/
+	
+	newObjects.forEach(function(ele, i, eles){
+		if(ele.group() == "nodes"){
+			
+			oldRPos = ele.renderedPosition();
+			//calculate new positions relative to renderedLeft, renderedTop (mouse position)
+			newRPos = {x:oldRPos.x - difX, y:oldRPos.y - difY};
+			
+			/* debug data
+			console.log("oldRPos");
+			console.log(oldRPos);
+			console.log("newRPos");
+			console.log(newRPos);
+			*/
+			
+			ele.renderedPosition(newRPos);
+		}
+	});
+	
+	
+	if($("#snapControl").prop("checked")){
+		cy.snapToGrid();
+	}
+	
+	
+}
+
 /* functions for tools in the toolbar */
 /** switch through the edge types for a selected edge */
 function switchEdgeType(){
@@ -196,6 +291,12 @@ function switchEdgeType(){
 	});
 }
 
+/** center the view on the graph and reset the zoom to default level */
+function centerOnGraph(){
+	//first zoom level, then center in order to move the viewport to the correct position
+	cy.zoom(1);
+	cy.center();
+}
 
 /* layout */
 
@@ -317,6 +418,15 @@ function addEventListeners(){
 			$("#edgeSwitch").prop('disabled', true);
 		}
 	});
+	
+	// DEBUG
+	// show position of selected elements on pressing 's'
+	$(document).on('keydown', function(event){
+		if(event.key == 's'){
+			console.log(cy.$(':selected').position());
+			console.log(cy.$(':selected').renderedPosition());
+		}
+	});
 
 	// detect double click or single click with alt
 	cy.on('tap', 'node', function(event){
@@ -355,15 +465,27 @@ function allowDrop(ev) {
   ev.preventDefault();
 }
 
-function drag(ev) {
+function drag(ev, group, isTemplate) {
   ev.dataTransfer.setData("text", ev.target.innerHTML);
+  ev.dataTransfer.setData("group", group);
+  ev.dataTransfer.setData("isTemplate", isTemplate);
+
 }
 
 function drop(ev) {
 	ev.preventDefault();
 	var data = ev.dataTransfer.getData("text");
+	var isTemplate = ev.dataTransfer.getData("isTemplate");
+	
 	var renderedLeft = ev.clientX - $(cy.container()).position().left;
 	var renderedTop = ev.clientY - $(cy.container()).position().top;
-	addNodeToCy(data, renderedLeft, renderedTop)
+
+	if(isTemplate === "true"){
+		var groupName = ev.dataTransfer.getData("group");
+		displayTemplate(data, groupName, renderedLeft, renderedTop);
+	}
+	else{
+		addNodeToCy(data, renderedLeft, renderedTop);
+	}
 }
 
