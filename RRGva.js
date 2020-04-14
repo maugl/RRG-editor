@@ -36,7 +36,6 @@ function onLoad(){
 					label: 'data(name)',
 					'background-color': 'white',
 					//'color': 'white',
-					'color': 'grey',
 					'text-halign': 'center',
 					'text-valign': 'center',
 					'width': 'label',
@@ -50,7 +49,7 @@ function onLoad(){
 					'border-width': '1px',
 					'border-style': 'solid',
 					'border-color': 'black',
-					'color': 'lightgrey',
+					//'color': 'lightgrey',
 					'background-color': 'lightgrey'
 				}
 			},
@@ -114,7 +113,7 @@ function onLoad(){
 	executeSnapGrid(false);
 
 	// html label for super/subscript
-
+/*
 	cy.nodeHtmlLabel([{
 		query: 'node.base',
 		valign: "center",
@@ -122,10 +121,10 @@ function onLoad(){
 		valignBox: "center",
 		halignBox: "center",
 		tpl: function(data) {
-		    return '<span class="node_label">' + data.name + '</span>';
+		    return '<span class="node_label">' + data.label_name + '</span>';
 		}
 	    }]);
-
+*/
 
 	//load shelf data
 	loadTagData();
@@ -290,7 +289,7 @@ function addNodeToCy(nodeText, x, y){
 	if(x == undefined) x = 0;
 	if(y == undefined) y = 0;
 	node = 	{ // node" +
-				data: {name: nodeText},
+				data: {name: nodeText/*, label_name: nodeText*/},
 				renderedPosition: { x: x, y: y},
 				classes:['base']
 			};
@@ -500,7 +499,9 @@ function openTextChange(node){
 	nodeTextInput = $("<input></input>").attr("type", "text").attr("id", "nodeTextInput").attr("value", node.data("name")).width((25 > node.renderedWidth()) ? 25 : node.renderedWidth());
 	// add triggers for exiting edit mode
 	nodeTextInput.blur(function(){
+			input = this.value;
 			node.data("name", this.value);
+			//node.data("label_name", convertLatexStyleSupSub(this.value));
 			inTextEditMode = false;
 			cy.userPanningEnabled(true);
 			this.parentElement.remove();
@@ -521,6 +522,20 @@ function openTextChange(node){
 	// take this into account if optimizing for mobile safari (https://stackoverflow.com/questions/4067469/selecting-all-text-in-html-text-input-when-clicked)
 	$("#nodeTextInput").focus().select();
 }
+/*
+function convertLatexStyleSupSub(text){
+
+	console.log(text.match(/_{.*}/g));
+	if (text.match(/_{.*}/g)){
+		//replace subscript
+		text = text.replace(/_\{(.*?[^\\])\}/g, "<sub>$1</sub>").replace("\}", "}");
+	}
+	if (text.match(/\^{.*}/g)){
+		//replace superscript
+		text = text.replace(/\^{(.*?[^\\])}/g,"<sup>$1</sup>").replace("\}", "}");
+	}
+	return text;
+}*/
 
 /** event listeners */
 function addEventListeners(){
