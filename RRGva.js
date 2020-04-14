@@ -35,6 +35,8 @@ function onLoad(){
 					shape: 'rectangle',					
 					label: 'data(name)',
 					'background-color': 'white',
+					//'color': 'white',
+					'color': 'grey',
 					'text-halign': 'center',
 					'text-valign': 'center',
 					'width': 'label',
@@ -48,6 +50,7 @@ function onLoad(){
 					'border-width': '1px',
 					'border-style': 'solid',
 					'border-color': 'black',
+					'color': 'lightgrey',
 					'background-color': 'lightgrey'
 				}
 			},
@@ -109,15 +112,22 @@ function onLoad(){
 	// snap to grid: makes graph be positioned along a grid
 	cy.snapToGrid();
 	executeSnapGrid(false);
-	
-	//test shelf loading
-	//TODO json/JS-object format for shelf contents (maybe use json format of cytoscape)
-	/*
-	var shelfLeftData = ['NP', 'V', 'PRED', 'SENTENCE', 'CLAUSE', 'CORE', 'NUC'];
-	loadShelfData("Layered Structure", $("#left_shelf"), shelfLeftData, false);
-	var shelfLeftData2 = ['IF', 'TNS', 'ASP', 'MOD', 'NEG', 'STA'];
-	loadShelfData("Operators", $("#left_shelf"), shelfLeftData2, false);
-	*/
+
+	// html label for super/subscript
+
+	cy.nodeHtmlLabel([{
+		query: 'node.base',
+		valign: "center",
+		halign: "center",
+		valignBox: "center",
+		halignBox: "center",
+		tpl: function(data) {
+		    return '<span class="node_label">' + data.name + '</span>';
+		}
+	    }]);
+
+
+	//load shelf data
 	loadTagData();
 	loadTemplateData();
 }

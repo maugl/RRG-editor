@@ -50,6 +50,16 @@
 	position: absolute;
 }
 
+.node_label{
+	cursor: default;
+	font-family: Arial;
+	font-style: normal;
+	font-size: 16;
+	font-weight: normal;
+	margin: 0 0 1.2 0;
+	display: inline-block;
+}
+
 .shelf{
 	position: relative;
 	border: 1px solid black;
@@ -81,4 +91,13 @@ input[type="button"]:disabled{
 textarea{
 	resize: none;
 	width: 100%;
+}
+
+sup, sub {
+  vertical-align: baseline;
+  position: relative;
+  top: -0.4em;
+}
+sub { 
+  top: 0.4em; 
 }
