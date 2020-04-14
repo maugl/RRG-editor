@@ -1,6 +1,7 @@
 //TODO sometimes right-click-drag off node does not work...
 //TODO add triangle for summarizing tree under
-//TODO align to grid when inserting elms after it has been activated
+//TODO sometimes edges do not render when inserting template (when clicking on edge it is rendered)
+
 
 $( document ).ready(function(){
 	onLoad();
@@ -108,11 +109,13 @@ function onLoad(){
 	
 	//test shelf loading
 	//TODO json/JS-object format for shelf contents (maybe use json format of cytoscape)
+	/*
 	var shelfLeftData = ['NP', 'V', 'PRED', 'SENTENCE', 'CLAUSE', 'CORE', 'NUC'];
 	loadShelfData("Layered Structure", $("#left_shelf"), shelfLeftData, false);
 	var shelfLeftData2 = ['IF', 'TNS', 'ASP', 'MOD', 'NEG', 'STA'];
 	loadShelfData("Operators", $("#left_shelf"), shelfLeftData2, false);
-	//TODO load templates
+	*/
+	loadTagData();
 	loadTemplateData();
 }
 
@@ -120,10 +123,11 @@ function loadText(){
 	readTextArea(document.getElementById("text_input"));
 }
 
+/* functions for template shelves */
 /** load shelf data from js file */
 function loadTemplateData(){
 	for(var i = 0; i < Object.keys(templates).length; i++){
-		var groupName = Object.keys(templates)[i]
+		var groupName = Object.keys(templates)[i];
 		var group = templates[groupName];
 		var templateNames = [];
 		for(var j = 0; j < Object.keys(group).length; j++){
@@ -134,19 +138,124 @@ function loadTemplateData(){
 	}	
 }
 
+function loadTagData(){
+	for(var i = 0; i < Object.keys(tags).length; i++){
+		var groupName = Object.keys(tags)[i];
+		loadShelfData(groupName, $("#left_shelf"), tags[groupName], false);
+	}	
+}
+
 /** puts predefined tags into shelves */
 function loadShelfData(group, shelfElm, data, isTemplate){
 	if (group === ""){
 		group = "default";	
 	}
-	var shelfGroupHeader = $('<div>' + group + '</div>').attr("class", "shelf_group_header")
+	var shelfGroupHeader = $('<div>' + group + '</div>').attr("class", "shelf_group_header");
 	var shelfGroupContainer = $('<div></div>').attr("class", "shelf_group_container").append(shelfGroupHeader).appendTo(shelfElm);
 	for(elm in data){
 		var div_elm = $("<div>" + data[elm] + "</div>").attr("class", "shelf_content").attr("draggable", "true").attr("ondragstart", "drag(event, '" + group + "', " + isTemplate + ")");
 		shelfGroupContainer.append(div_elm);
 	}
+	return shelfGroupContainer;
+}
+/** insert input into shelf for adding new tags*/
+function addTagEdit(elm){
+	var tagInsert = $('<div><input type="text" placeholder="enter tag name..."></input></div>').attr("class", "new_tag");
+	if($(elm).children(".shelf_content").css("display") == "none"){
+		$(tagInsert).toggle();			
+	}
+	$(elm).append(tagInsert);
 }
 
+
+/** opens the functionality for adding tags */
+function addTags(){
+	$('#addTags').attr("disabled", true);
+	$('#saveTags').show();
+	var left_shelf = $('#left_shelf');
+	var shelfGroupHeaderInsert = $('<div><input type="text" placeholder="enter group name..."></input></div>').attr("class", "new_group");
+
+	left_shelf.children('.shelf_group_container').each(function(ind, elm){
+		addTagEdit(elm);
+	});
+	left_shelf.append(shelfGroupHeaderInsert);
+}
+
+function saveTags(){
+	$("#left_shelf .new_tag, #left_shelf .new_group").remove();
+	$("#saveTags").toggle();
+	$('#addTags').attr("disabled", false);
+	saveTagFile();
+}
+
+function saveTag(groupElm, tagName){
+	var groupName = $(groupElm).find(".shelf_group_header").text();
+	if(tags[groupName] == undefined){
+		tags[groupName] = [];
+	}
+	tags[groupName].push(tagName);
+
+	console.log(tags);
+	addTagToGroup(groupElm, tagName);
+}
+
+/** puts additional tag into existing groups */
+function addTagToGroup(groupElm, tagName){
+	console.log(groupElm.value);
+	var div_elm = $("<div>" + tagName + "</div>").attr("class", "shelf_content").attr("draggable", "true").attr("ondragstart", "drag(event, '" + $(groupElm).find(".shelf_group_header").val() + "', false)");
+	$(groupElm).append(div_elm);
+}
+
+function addTemplateToGroup(groupElm, templateName){
+	var div_elm = $("<div>" + templateName + "</div>").attr("class", "shelf_content").attr("draggable", "true").attr("ondragstart", "drag(event, '" + $(groupElm).find(".shelf_group_header").val() + "', true)");
+	$(groupElm).append(div_elm);
+}
+
+/* opens the functionality for adding templates */
+function editTemplates(){
+	$('#editTemplates').attr("disabled", true);
+	$('#saveTemplates').show();
+
+	var right_shelf = $('#right_shelf');
+	right_shelf.children('.shelf_group_container').each(function(ind, elm){
+		addTemplateCreateButton(elm);
+	});
+	var shelfGroupHeaderInsert = $('<div><input type="text" placeholder="enter group name..."></input></div>').attr("class", "new_group");
+	right_shelf.append(shelfGroupHeaderInsert);		
+}
+
+function saveTemplates(){
+	$("#right_shelf .new_group, .new_template").remove();
+	$("#saveTemplates").toggle();
+	$('#editTemplates').attr("disabled", false);
+	saveTemplateFile();
+}
+
+function addTemplateCreateButton(groupElm){
+
+	var input = $('<input type="text" placeholder="enter template name..."></input>');
+	var templateButton = $('<div></div>').attr("class", "new_template");
+	templateButton.append(input);
+	if($(groupElm).children(".shelf_content").css("display") == "none"){
+		$(templateButton).toggle();			
+	}
+	$(groupElm).append(templateButton);
+}
+
+function saveTemplate(groupElm, templateName){
+	console.log(groupElm);
+	var groupName = $(groupElm).find(".shelf_group_header").text();
+	console.log(groupName);
+	console.log(templates[groupName]);
+	if(templates[groupName] == undefined){
+		templates[groupName] = {};
+	}
+	templates[groupName][templateName] = JSON.stringify(cy.$(":selected").jsons());
+	console.log(templates);
+	addTemplateToGroup(groupElm, templateName);
+}
+
+/* functions for graph manipulation */
 /** reads text from input text area, splits by whitespace and puts split parts into graph */
 function readTextArea(elm){
 	var sentence = elm.value.split(" ");
@@ -194,9 +303,15 @@ function displayTemplate(templateName, groupName, renderedLeft, renderedTop){
 		//check if IDs exist
 		var oldID = elm["data"]["id"];
 		if(cy.$("#" + oldID).length > 0){
-			console.log(oldID);
+			//console.log(oldID);
 			//generate new ID
 			var newID = (Math.random()*1e19).toString(36);
+			
+			// in case newID already exists, generate a new one until it is unique - should happen very rarely if it ever happens
+			while(cy.$("#" + newID).length > 0 | $(templateObject).map(function(i, e){return e["data"]["id"]}).get().indexOf(newID) > -1){
+				newID = (Math.random()*1e19).toString(36);
+			}
+
 			//replace with new ID
 			$(templateObject).each(function(i, e){
 				if(e["group"] == "nodes" && e["data"]["id"] == oldID){
@@ -293,9 +408,8 @@ function switchEdgeType(){
 
 /** center the view on the graph and reset the zoom to default level */
 function centerOnGraph(){
-	//first zoom level, then center in order to move the viewport to the correct position
-	cy.zoom(1);
-	cy.center();
+	//fit viewport to all elements with padding of 50
+	cy.fit( cy.$(), 50 );
 }
 
 /* layout */
@@ -316,21 +430,36 @@ function executeSnapGrid(state){
 
 /* export */
 
-function saveTemplate(){
-	var graphExport = [];
-	cy.$(":selected").each(function(ele, i, eles){
-		var serialized = {
-			id: ele.id(),
-			classes: ele.classes(),
-			position: ele.position(),
-			group: ele.group(),
-			source: ele.data('source'),
-			target: ele.data('target'),
-		}
-		graphExport.push(serialized);
-	});
-	console.log(JSON.stringify(cy.$(":selected").jsons()));
-	//console.log(JSON.stringify(graphExport));
+function saveTemplateFile(){
+	//create download of templates.js
+	var text = "var templates = " + JSON.stringify(templates, null, 5);
+	// code snippet from https://ourcodeworld.com/articles/read/189/how-to-create-a-file-and-generate-a-download-with-javascript-in-the-browser-without-a-server , accessed 14.04.2020
+	var element = document.createElement('a');
+	element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+	element.setAttribute('download', 'templates.js');
+
+	element.style.display = 'none';
+	document.body.appendChild(element);
+
+	element.click();
+
+	document.body.removeChild(element);
+}
+
+function saveTagFile(){
+	//create download of templates.js
+	var text = "var tags = " + JSON.stringify(tags, null, 5);
+	// code snippet from https://ourcodeworld.com/articles/read/189/how-to-create-a-file-and-generate-a-download-with-javascript-in-the-browser-without-a-server , accessed 14.04.2020
+	var element = document.createElement('a');
+	element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+	element.setAttribute('download', 'tags.js');
+
+	element.style.display = 'none';
+	document.body.appendChild(element);
+
+	element.click();
+
+	document.body.removeChild(element);
 }
 
 function saveToJPG(){
@@ -421,12 +550,13 @@ function addEventListeners(){
 	
 	// DEBUG
 	// show position of selected elements on pressing 's'
+	/*	
 	$(document).on('keydown', function(event){
 		if(event.key == 's'){
 			console.log(cy.$(':selected').position());
 			console.log(cy.$(':selected').renderedPosition());
 		}
-	});
+	});*/
 
 	// detect double click or single click with alt
 	cy.on('tap', 'node', function(event){
@@ -454,8 +584,40 @@ function addEventListeners(){
 		}
 	});
 
+	//show/hide shelf groups
 	$('.shelf').on("click", ".shelf_group_header", function(event){
 		$(event.target).siblings().toggle();
+	});
+
+	//add tag to shelf on enter when editing tag shelves
+	$('.shelf').on("keydown", function(event){
+
+		if(event.key == 'Enter'){
+			//add new group or new element
+			//console.log($(event.target).val());
+			var input_div = $(event.target).parent();
+			if($(event.target).parent().hasClass("new_group")){
+				groupContainer = loadShelfData($(event.target).val(), $(event.target).parents(".shelf"), [], false);
+				if($(event.target).parents("#left_shelf").hasClass("shelf")){
+					addTagEdit(groupContainer);
+				}
+				if($(event.target).parents("#right_shelf").hasClass("shelf")){
+					addTemplateCreateButton(groupContainer);
+				}
+				$(event.target).val("");
+				$(input_div).appendTo($(input_div).parent());
+			}
+			if($(event.target).parent().hasClass("new_tag")){
+				saveTag(input_div.parent(), $(event.target).val());
+				$(event.target).val("");
+				$(input_div).appendTo($(input_div).parent());
+			}
+			if($(event.target).parent().hasClass("new_template")){
+				saveTemplate($(input_div).parent(), event.target.value);
+				$(event.target).val("");
+				$(input_div).appendTo($(input_div).parent());
+			}
+		}
 	});
 }
 

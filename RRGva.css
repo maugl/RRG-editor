@@ -32,6 +32,10 @@
 	height: 100%;
 }
 
+#saveTags, #saveTemplates{
+	display: none;
+}
+
 .table_shelf{
 	width: 15%;
 	padding: 0px;
@@ -68,6 +72,10 @@
 
 .shelf_group_content{
 	background-color: grey;
+}
+
+input[type="button"]:disabled{
+	opacity: 0.5;
 }
 
 textarea{
