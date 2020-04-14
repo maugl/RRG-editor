@@ -21,6 +21,9 @@ var X_NODE_SPACING = 80;
 // global constant with edge states/classes for switching edge types
 var EDGE_TYPES_SWITCH = {current: ['base', 'operator', 'arrow_target', 'arrow_source'], next:['operator', 'arrow_target', 'arrow_source', 'base']};
 
+var templates = (templates == undefined) ? {} : templates;
+var tags = (tags == undefined) ? {} : tags;
+
 //TODO export cytoscape style to separate json file
 function onLoad(){
 	cy = cytoscape({
@@ -126,6 +129,7 @@ function loadText(){
 /* functions for template shelves */
 /** load shelf data from js file */
 function loadTemplateData(){
+	
 	for(var i = 0; i < Object.keys(templates).length; i++){
 		var groupName = Object.keys(templates)[i];
 		var group = templates[groupName];
