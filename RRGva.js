@@ -57,40 +57,37 @@ function onLoad(){
 				selector: 'node:parent',
 				style:{
 					shape: 'rectangle',					
-					label: 'data(name)',
 					'background-color': 'white',
-					//'color': 'white',
-					'font-size':'7',
-					'text-halign': 'center',
-					'text-valign': 'center',
-					'padding': '5, 0, 5, 0',
+					'border-color': 'grey',
+					'padding': '0, 0, 0, 0',
+					'margin': '0, 0, 0, 0',
 					'compound-sizing-wrt-labels': 'include'
 				}
 			},
 			{
 				selector: 'node:parent:selected',
 				style:{
-					shape: 'rectangle',					
-					label: 'data(name)',
+					shape: 'rectangle',
 					'background-color': 'lightgrey',
 					'border-width': '1px',
 					'border-style': 'solid',
-					'border-color': 'black',		
+					'border-color': 'black',
+					'compound-sizing-wrt-labels': 'include'
 				}
 			},
 			{
 				selector: 'node:child',
 				style:{
 					'background-opacity': '0',
-					shape: 'rectangle',					
 					label: 'data(name)',
-					'background-color': 'white',
-					//'color': 'white',
+					'border-width': '0px',
 					'text-halign': 'center',
 					'text-valign': 'center',
 					'width': 'label',
 					'height': 'label',
-					'padding': '5, 0, 5, 0'
+					'events': 'no',
+					'padding': '4, 0, 4, 0',
+					'margin': '0, 0, 0, 0'
 				}
 			},
 
@@ -180,8 +177,8 @@ function loadText(){
 
 function produceNestedNodes(){
 	var nodes = [
-		{ data: { id: 'a', parent: 'b' , name: "nodeA"}},
-		{ data: { id: 'b' , name: 'nodesdsdsdsdsdsssdsB'}}
+		{ data: { id: 'a', parent: 'b' , name: "Mary"}},
+		{ data: { id: 'b'}, selectable: true}
 	]
 	cy.add(nodes);
 }
@@ -628,6 +625,12 @@ function addEventListeners(){
 			$("#edgeSwitch").prop('disabled', true);
 		}
 	});
+
+	cy.on('select', 'node:child', function(event){
+		event.target.unselectify();
+		event.target.parent().select();
+		event.target.selectify();
+	});
 	
 	// DEBUG
 	// show position of selected elements on pressing 's'
@@ -642,6 +645,7 @@ function addEventListeners(){
 	// detect double click or single click with alt
 	cy.on('tap', 'node', function(event){
 		//detect double click
+
 		var curTime = Date.now();
 		var curNode = event.target;
 		if(curTime - lastClickTime < 500 && curNode == lastClickedNode){
