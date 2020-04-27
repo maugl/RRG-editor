@@ -54,18 +54,17 @@ function onLoad(){
 				}
 			},
 			{
-				selector: 'node:parent',
+				selector: 'node.superSubscriptContainer',
 				style:{
 					shape: 'rectangle',					
 					'background-color': 'white',
 					'border-color': 'grey',
 					'padding': '0, 0, 0, 0',
-					'margin': '0, 0, 0, 0',
 					'compound-sizing-wrt-labels': 'include'
 				}
 			},
 			{
-				selector: 'node:parent:selected',
+				selector: 'node.superSubscriptContainer:selected',
 				style:{
 					shape: 'rectangle',
 					'background-color': 'lightgrey',
@@ -76,7 +75,7 @@ function onLoad(){
 				}
 			},
 			{
-				selector: 'node:child',
+				selector: 'node.superSubscriptText, node.subscript, node.superscript',
 				style:{
 					'background-opacity': '0',
 					label: 'data(name)',
@@ -87,7 +86,12 @@ function onLoad(){
 					'height': 'label',
 					'events': 'no',
 					'padding': '4, 0, 4, 0',
-					'margin': '0, 0, 0, 0'
+				}
+			},
+			{
+				selector: 'node.subscript, node.superscript',
+				style:{
+					'font-size': '8',
 				}
 			},
 
@@ -177,10 +181,19 @@ function loadText(){
 
 function produceNestedNodes(){
 	var nodes = [
-		{ data: { id: 'a', parent: 'b' , name: "Mary"}},
-		{ data: { id: 'b'}, selectable: true}
-	]
-	cy.add(nodes);
+		{ data: { id: 'a', parent: 'b' , name: "Mary", order: "1"}, classes: ['superSubscriptText', 'noSnap']},
+		{ data: { id: 'c', parent: 'b' , name: "Obj", order: "1"}, classes: ["subscript", 'noSnap'], position: {x: 24, y: 4}},
+		{ data: { id: 'd', parent: 'b' , name: "123", order: "1"}, classes: ["superscript", 'noSnap'], position: {x: 24, y: -4}},
+		{ data: { id: 'b', name: 'Mary^{123}_{Obj}'}, selectable: true, classes: ['superSubscriptContainer']}
+	];
+
+
+	//TODO insert subscript with respect to corresponding text element: x = width - 12, y = position.y -4
+	//TODO insert superscript with respect to corresponding text element: x = position.x + width - 12, y = position.y -4
+
+	eles = cy.add(nodes);
+	console.log(eles[0].width());
+	console.log(eles[0].position());
 }
 
 
@@ -535,6 +548,21 @@ function saveToJPG(){
 	download.download = "RRG_Graph.jpg";
 	download.click();
 }
+
+function saveToPNG(){
+	cy.$().unselect();
+	boundingBox = cy.$().bb();
+	png_options={
+		'full': 'true',
+		'bg': 'white',
+		'scale': 10
+	};
+	var download = document.createElement('a');
+	download.href = cy.png(png_options);
+	download.download = "RRG_Graph.png";
+	download.click();
+}
+
 
 
 // opens a text input field for changing a Nodes Name

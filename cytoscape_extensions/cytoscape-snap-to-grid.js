@@ -185,7 +185,10 @@
           };
           
           var snapNode = function(node) {
-            var pos = node.position();
+            // changed!!!
+            if(node.hasClass('noSnap')) return;
+	    // end changed
+	    var pos = node.position();
             
             var cellX = Math.floor(pos.x/options().gridSpacing);
             var cellY = Math.floor(pos.y/options().gridSpacing);
