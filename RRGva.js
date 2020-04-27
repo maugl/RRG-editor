@@ -53,6 +53,47 @@ function onLoad(){
 					'background-color': 'lightgrey'
 				}
 			},
+			{
+				selector: 'node:parent',
+				style:{
+					shape: 'rectangle',					
+					label: 'data(name)',
+					'background-color': 'white',
+					//'color': 'white',
+					'font-size':'7',
+					'text-halign': 'center',
+					'text-valign': 'center',
+					'padding': '5, 0, 5, 0',
+					'compound-sizing-wrt-labels': 'include'
+				}
+			},
+			{
+				selector: 'node:parent:selected',
+				style:{
+					shape: 'rectangle',					
+					label: 'data(name)',
+					'background-color': 'lightgrey',
+					'border-width': '1px',
+					'border-style': 'solid',
+					'border-color': 'black',		
+				}
+			},
+			{
+				selector: 'node:child',
+				style:{
+					'background-opacity': '0',
+					shape: 'rectangle',					
+					label: 'data(name)',
+					'background-color': 'white',
+					//'color': 'white',
+					'text-halign': 'center',
+					'text-valign': 'center',
+					'width': 'label',
+					'height': 'label',
+					'padding': '5, 0, 5, 0'
+				}
+			},
+
 			//edges
 			{
 				selector: 'edge',
@@ -129,11 +170,22 @@ function onLoad(){
 	//load shelf data
 	loadTagData();
 	loadTemplateData();
+	
+	produceNestedNodes();
 }
 
 function loadText(){
 	readTextArea(document.getElementById("text_input"));
 }
+
+function produceNestedNodes(){
+	var nodes = [
+		{ data: { id: 'a', parent: 'b' , name: "nodeA"}},
+		{ data: { id: 'b' , name: 'nodesdsdsdsdsdsssdsB'}}
+	]
+	cy.add(nodes);
+}
+
 
 /* functions for template shelves */
 /** load shelf data from js file */
