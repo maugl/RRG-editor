@@ -56,9 +56,9 @@ function onLoad(){
 			{
 				selector: 'node.superSubscriptContainer',
 				style:{
-					shape: 'rectangle',					
+					shape: 'rectangle',
+					'border-width': '0px',
 					'background-color': 'white',
-					'border-color': 'grey',
 					'padding': '0, 0, 0, 0',
 					'compound-sizing-wrt-labels': 'include'
 				}
@@ -154,48 +154,124 @@ function onLoad(){
 	cy.snapToGrid();
 	executeSnapGrid(false);
 
-	// html label for super/subscript
-/*
-	cy.nodeHtmlLabel([{
-		query: 'node.base',
-		valign: "center",
-		halign: "center",
-		valignBox: "center",
-		halignBox: "center",
-		tpl: function(data) {
-		    return '<span class="node_label">' + data.label_name + '</span>';
-		}
-	    }]);
-*/
-
 	//load shelf data
 	loadTagData();
 	loadTemplateData();
 	
-	produceNestedNodes();
+	insertSuperSubscript("Marys^{L23}Lewis^{L89}", 0, 0);
 }
 
 function loadText(){
 	readTextArea(document.getElementById("text_input"));
 }
 
-function produceNestedNodes(){
-	var nodes = [
-		{ data: { id: 'a', parent: 'b' , name: "Mary", order: "1"}, classes: ['superSubscriptText', 'noSnap']},
-		{ data: { id: 'c', parent: 'b' , name: "Obj", order: "1"}, classes: ["subscript", 'noSnap'], position: {x: 24, y: 4}},
-		{ data: { id: 'd', parent: 'b' , name: "123", order: "1"}, classes: ["superscript", 'noSnap'], position: {x: 24, y: -4}},
-		{ data: { id: 'b', name: 'Mary^{123}_{Obj}'}, selectable: true, classes: ['superSubscriptContainer']}
-	];
-
-
-	//TODO insert subscript with respect to corresponding text element: x = width - 12, y = position.y -4
-	//TODO insert superscript with respect to corresponding text element: x = position.x + width - 12, y = position.y -4
-
-	eles = cy.add(nodes);
-	console.log(eles[0].width());
-	console.log(eles[0].position());
+function insertSuperSubscript(text, posX, posY){
+	textData = convertLatexStyleSupSub(text);
+	
+	parentID = getNewID();
+	
+	var parentNode = { data: { id: parentID, name: text}, selectable: true, classes: ['superSubscriptContainer']};
+	var parentNodeEle = cy.add(parentNode);
+		
+	var curTotalwidth = 0;
+	$(textData).each(function(ind, elm){
+		var textNode = { data: { id: getNewID(), parent: parentID , name: elm.text, order: ind}, classes: ['superSubscriptText', 'noSnap']};
+		var textNodeEle = cy.add(textNode);
+		textNodeEle.position({x: posX + curTotalwidth + textNodeEle.width()/2, y: posY});
+				
+		curTotalwidth += textNodeEle.width();
+		
+		var subWidth = 0;
+		var supWidth = 0;
+		if(elm.sub != ""){
+			var subNode = { data: { id: getNewID(), parent: parentID , name: elm.sub, order: ind}, classes: ["subscript", 'noSnap']};
+			var subNodeEle = cy.add(subNode);
+			subWidth = subNodeEle.width();
+			subNodeEle.position({x: posX + curTotalwidth + subWidth/2, y: posY + 4});
+		}
+		if(elm.sup != ""){
+			var superNode ={ data: { id: getNewID(), parent: parentID , name: elm.sup, order: ind}, classes: ["superscript", 'noSnap']};
+			var superNodeEle = cy.add(superNode);
+			supWidth = superNodeEle.width();
+			superNodeEle.position({x: posX + curTotalwidth + supWidth/2, y: posY - 4});
+		}
+		
+		curTotalwidth += Math.max(subWidth, supWidth);
+	});
+	
+	parentNodeEle.position();
+	parentNodeEle.position({x: posX, y: posY});
 }
 
+function convertLatexStyleSupSub(text){
+
+	var subDelim = "===____===";
+	var superDelim = "===----===";
+	
+	var subParts = text.match(/_{.*?[^\\]}/g);
+	if (subParts){
+		//replace subscript
+		text = text.replace(/_{.*?[^\\]}/g, subDelim);
+	}
+	
+	var superParts = text.match(/\^{.*?[^\\]}/g);
+	if (superParts){
+		//replace superscript
+		text = text.replace(/\^{.*?[^\\]}/g, superDelim);
+	}
+		
+	var parts = [];
+	var textParts = text.split(subDelim);
+	$(textParts).each(function(ind, elm){
+		$(elm.split(superDelim)).each(function(i, e){
+			if(e != "") parts.push(e);
+		});
+	});
+	
+	var wordCounter = -1;
+	var subCounter = 0;
+	var supCounter = 0;
+	var output = [];
+	var prevTextLen = text.length;
+	while(text.length > 0){
+		if(text.startsWith(parts[wordCounter + 1])){
+			wordCounter++;
+			text = text.replace(parts[wordCounter], "");
+			output[wordCounter] = {"text": parts[wordCounter].replace("\\}", "}"), "sup": "", "sub": ""};
+		}
+		if(text.startsWith(subDelim)){
+			text = text.replace(subDelim, "");
+			if(wordCounter < 0){
+				subCounter++;
+				continue;
+			}
+			output[wordCounter].sub = subParts[subCounter].replace(/(_{|}$)/g, "").replace("\\}", "}");
+			subCounter++;
+		}
+		if(text.startsWith(superDelim)){
+			text = text.replace(superDelim, "");
+			if(wordCounter < 0){
+				supCounter++;
+				continue;
+			}
+			output[wordCounter].sup = superParts[supCounter].replace(/(\^{|}$)/g, "").replace("\\}", "}");
+			supCounter++;
+		}
+		// prevent infinite loop
+		if(prevTextLen <= text.length){
+			break;
+		}
+		prevTextLen = text.length;
+	}
+	
+	console.log(output);
+	
+	return output;
+}
+
+function hasSuperSubScript(text){
+	return text.match(/_{.*?[^\\]}/g) || text.match(/\^{.*?[^\\]}/g);
+}
 
 /* functions for template shelves */
 /** load shelf data from js file */
@@ -467,6 +543,17 @@ function displayTemplate(templateName, groupName, renderedLeft, renderedTop){
 	
 }
 
+function getNewID(){
+	var newID = (Math.random()*1e19).toString(36);
+			
+	// in case newID already exists, generate a new one until it is unique - should happen very rarely if it ever happens
+	while(cy.$("#" + newID).length > 0){
+		newID = (Math.random()*1e19).toString(36);
+	}
+	
+	return newID;
+}
+
 /* functions for tools in the toolbar */
 /** switch through the edge types for a selected edge */
 function switchEdgeType(){
@@ -541,7 +628,8 @@ function saveToJPG(){
 	cy.$().unselect();
 	boundingBox = cy.$().bb();
 	jpg_options={
-		'full': 'true'
+		'full': 'true',
+		'scale': 10
 	};
 	var download = document.createElement('a');
 	download.href = cy.jpg(jpg_options);
@@ -578,7 +666,12 @@ function openTextChange(node){
 	nodeTextInput.blur(function(){
 			input = this.value;
 			node.data("name", this.value);
-			//node.data("label_name", convertLatexStyleSupSub(this.value));
+			if(hasSuperSubScript(this.value)){
+				var x = node.position("x");
+				var y = node.position("y");
+				node.remove();
+				insertSuperSubscript(this.value, x, y);
+			}
 			inTextEditMode = false;
 			cy.userPanningEnabled(true);
 			this.parentElement.remove();
@@ -599,20 +692,6 @@ function openTextChange(node){
 	// take this into account if optimizing for mobile safari (https://stackoverflow.com/questions/4067469/selecting-all-text-in-html-text-input-when-clicked)
 	$("#nodeTextInput").focus().select();
 }
-/*
-function convertLatexStyleSupSub(text){
-
-	console.log(text.match(/_{.*}/g));
-	if (text.match(/_{.*}/g)){
-		//replace subscript
-		text = text.replace(/_\{(.*?[^\\])\}/g, "<sub>$1</sub>").replace("\}", "}");
-	}
-	if (text.match(/\^{.*}/g)){
-		//replace superscript
-		text = text.replace(/\^{(.*?[^\\])}/g,"<sup>$1</sup>").replace("\}", "}");
-	}
-	return text;
-}*/
 
 /** event listeners */
 function addEventListeners(){
