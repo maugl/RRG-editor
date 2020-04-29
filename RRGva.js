@@ -3,6 +3,9 @@
 //TODO sometimes edges do not render when inserting template (when clicking on edge it is rendered)
 
 
+//TODO fix super subscript with templates
+//TODO fix super subscript with edges
+
 $( document ).ready(function(){
 	onLoad();
 });
@@ -13,6 +16,7 @@ var cy;
 var dragoutToggle = false;
 var dragOverNode = undefined;
 var inTextEditMode = false;
+var inTemplateEditMode = false;
 // globals for detecting double click on a node
 var lastClickTime;
 var lastClickedNode;
@@ -49,7 +53,6 @@ function onLoad(){
 					'border-width': '1px',
 					'border-style': 'solid',
 					'border-color': 'black',
-					//'color': 'lightgrey',
 					'background-color': 'lightgrey'
 				}
 			},
@@ -157,120 +160,10 @@ function onLoad(){
 	//load shelf data
 	loadTagData();
 	loadTemplateData();
-	
-	insertSuperSubscript("Marys^{L23}Lewis^{L89}", 0, 0);
 }
 
 function loadText(){
 	readTextArea(document.getElementById("text_input"));
-}
-
-function insertSuperSubscript(text, posX, posY){
-	textData = convertLatexStyleSupSub(text);
-	
-	parentID = getNewID();
-	
-	var parentNode = { data: { id: parentID, name: text}, selectable: true, classes: ['superSubscriptContainer']};
-	var parentNodeEle = cy.add(parentNode);
-		
-	var curTotalwidth = 0;
-	$(textData).each(function(ind, elm){
-		var textNode = { data: { id: getNewID(), parent: parentID , name: elm.text, order: ind}, classes: ['superSubscriptText', 'noSnap']};
-		var textNodeEle = cy.add(textNode);
-		textNodeEle.position({x: posX + curTotalwidth + textNodeEle.width()/2, y: posY});
-				
-		curTotalwidth += textNodeEle.width();
-		
-		var subWidth = 0;
-		var supWidth = 0;
-		if(elm.sub != ""){
-			var subNode = { data: { id: getNewID(), parent: parentID , name: elm.sub, order: ind}, classes: ["subscript", 'noSnap']};
-			var subNodeEle = cy.add(subNode);
-			subWidth = subNodeEle.width();
-			subNodeEle.position({x: posX + curTotalwidth + subWidth/2, y: posY + 4});
-		}
-		if(elm.sup != ""){
-			var superNode ={ data: { id: getNewID(), parent: parentID , name: elm.sup, order: ind}, classes: ["superscript", 'noSnap']};
-			var superNodeEle = cy.add(superNode);
-			supWidth = superNodeEle.width();
-			superNodeEle.position({x: posX + curTotalwidth + supWidth/2, y: posY - 4});
-		}
-		
-		curTotalwidth += Math.max(subWidth, supWidth);
-	});
-	
-	parentNodeEle.position();
-	parentNodeEle.position({x: posX, y: posY});
-}
-
-function convertLatexStyleSupSub(text){
-
-	var subDelim = "===____===";
-	var superDelim = "===----===";
-	
-	var subParts = text.match(/_{.*?[^\\]}/g);
-	if (subParts){
-		//replace subscript
-		text = text.replace(/_{.*?[^\\]}/g, subDelim);
-	}
-	
-	var superParts = text.match(/\^{.*?[^\\]}/g);
-	if (superParts){
-		//replace superscript
-		text = text.replace(/\^{.*?[^\\]}/g, superDelim);
-	}
-		
-	var parts = [];
-	var textParts = text.split(subDelim);
-	$(textParts).each(function(ind, elm){
-		$(elm.split(superDelim)).each(function(i, e){
-			if(e != "") parts.push(e);
-		});
-	});
-	
-	var wordCounter = -1;
-	var subCounter = 0;
-	var supCounter = 0;
-	var output = [];
-	var prevTextLen = text.length;
-	while(text.length > 0){
-		if(text.startsWith(parts[wordCounter + 1])){
-			wordCounter++;
-			text = text.replace(parts[wordCounter], "");
-			output[wordCounter] = {"text": parts[wordCounter].replace("\\}", "}"), "sup": "", "sub": ""};
-		}
-		if(text.startsWith(subDelim)){
-			text = text.replace(subDelim, "");
-			if(wordCounter < 0){
-				subCounter++;
-				continue;
-			}
-			output[wordCounter].sub = subParts[subCounter].replace(/(_{|}$)/g, "").replace("\\}", "}");
-			subCounter++;
-		}
-		if(text.startsWith(superDelim)){
-			text = text.replace(superDelim, "");
-			if(wordCounter < 0){
-				supCounter++;
-				continue;
-			}
-			output[wordCounter].sup = superParts[supCounter].replace(/(\^{|}$)/g, "").replace("\\}", "}");
-			supCounter++;
-		}
-		// prevent infinite loop
-		if(prevTextLen <= text.length){
-			break;
-		}
-		prevTextLen = text.length;
-	}
-	
-	console.log(output);
-	
-	return output;
-}
-
-function hasSuperSubScript(text){
-	return text.match(/_{.*?[^\\]}/g) || text.match(/\^{.*?[^\\]}/g);
 }
 
 /* functions for template shelves */
@@ -367,6 +260,8 @@ function editTemplates(){
 	$('#editTemplates').attr("disabled", true);
 	$('#saveTemplates').show();
 
+	inTemplateEditMode = true;
+	
 	var right_shelf = $('#right_shelf');
 	right_shelf.children('.shelf_group_container').each(function(ind, elm){
 		addTemplateCreateButton(elm);
@@ -379,6 +274,7 @@ function saveTemplates(){
 	$("#right_shelf .new_group, .new_template").remove();
 	$("#saveTemplates").toggle();
 	$('#editTemplates').attr("disabled", false);
+	inTemplateEditMode = false;
 	saveTemplateFile();
 }
 
@@ -401,7 +297,7 @@ function saveTemplate(groupElm, templateName){
 	if(templates[groupName] == undefined){
 		templates[groupName] = {};
 	}
-	templates[groupName][templateName] = JSON.stringify(cy.$(":selected").jsons());
+	templates[groupName][templateName] = JSON.stringify(cy.$(":selected, :selected > node").jsons());
 	console.log(templates);
 	addTemplateToGroup(groupElm, templateName);
 }
@@ -413,19 +309,31 @@ function readTextArea(elm){
 	var XPos = 0;
 	for(var i = 0; i < sentence.length; i++){
 		var YPos = 0;
+		
 		curNode = addNodeToCy(sentence[i], 0, YPos);
+		
 		XPos = XPos + curNode.width()/2;
 		curNode.position("x", XPos);
 		// calculate next node position using the current node for next node position to get even spacing on center
 		XPos = XPos + X_NODE_SPACING + curNode.width()/2;
 	}
+	
+	if($("#snapControl").prop("checked")){
+		cy.snapToGrid();
+	}	
+	
 	cy.center();
 }
 
-/** adds a node to the graph with specified "name", id and position */
+/** adds a node to the graph with specified "name", id and rendered position */
 function addNodeToCy(nodeText, x, y){
 	if(x == undefined) x = 0;
 	if(y == undefined) y = 0;
+	
+	if(hasSuperSubScript(nodeText)){
+		return insertSuperSubscript(nodeText, x, y);
+	}	
+
 	node = 	{ // node" +
 				data: {name: nodeText/*, label_name: nodeText*/},
 				renderedPosition: { x: x, y: y},
@@ -468,6 +376,9 @@ function displayTemplate(templateName, groupName, renderedLeft, renderedTop){
 				if(e["group"] == "nodes" && e["data"]["id"] == oldID){
 					e["data"]["id"] = newID;
 				}
+				if(e["group"] == "nodes" && e["data"]["parent"] == oldID){
+					e["data"]["parent"] = newID;
+				}
 				if(e["group"] == "edges"){
 					if(e["data"]["id"] == oldID){
 						e["data"]["id"] = newID;
@@ -491,9 +402,9 @@ function displayTemplate(templateName, groupName, renderedLeft, renderedTop){
 
 	// get old center of all nodes
 	var newBB = newObjects.renderedBoundingBox();
-	
-	var sourceX = newBB.x1 + newBB.h/2;
-	var sourceY = newBB.y1 + newBB.w/2;
+		
+	var sourceX = newBB.x1 + (newBB.w/2);
+	var sourceY = newBB.y1 + (newBB.h/2);
 	
 	// calculate factors to move nodes by
 	var difX = sourceX - renderedLeft;
@@ -518,7 +429,8 @@ function displayTemplate(templateName, groupName, renderedLeft, renderedTop){
 	*/
 	
 	newObjects.forEach(function(ele, i, eles){
-		if(ele.group() == "nodes"){
+		// check that nodes which 
+		if(ele.group() == "nodes" && ! ele.hasClass("templateNoRecalculation")){
 			
 			oldRPos = ele.renderedPosition();
 			//calculate new positions relative to renderedLeft, renderedTop (mouse position)
@@ -536,11 +448,11 @@ function displayTemplate(templateName, groupName, renderedLeft, renderedTop){
 	});
 	
 	
+	console.log(newObjects.renderedBoundingBox());
+	
 	if($("#snapControl").prop("checked")){
 		cy.snapToGrid();
-	}
-	
-	
+	}	
 }
 
 function getNewID(){
@@ -667,10 +579,12 @@ function openTextChange(node){
 			input = this.value;
 			node.data("name", this.value);
 			if(hasSuperSubScript(this.value)){
-				var x = node.position("x");
-				var y = node.position("y");
-				node.remove();
-				insertSuperSubscript(this.value, x, y);
+				var x = node.renderedPosition("x");
+				var y = node.renderedPosition("y");
+				insertSuperSubscriptExistingNode(this.value, x, y, node);
+			}
+			else{
+				removeSuperSubscript(node);
 			}
 			inTextEditMode = false;
 			cy.userPanningEnabled(true);
@@ -691,6 +605,137 @@ function openTextChange(node){
 	nodeTextDiv.css("left", node.renderedPosition("x") - node.renderedWidth()/2);
 	// take this into account if optimizing for mobile safari (https://stackoverflow.com/questions/4067469/selecting-all-text-in-html-text-input-when-clicked)
 	$("#nodeTextInput").focus().select();
+}
+
+/* functions for LaTeX like subscript and superscript */
+/* called with rendered position */
+function insertSuperSubscript(text, posX, posY){
+	parentID = getNewID();
+	var parentNode = { data: { id: parentID, name: text}, selectable: true, classes: ['superSubscriptContainer']};
+	var parentNodeEle = cy.add(parentNode);
+	return insertSuperSubscriptExistingNode(text, posX, posY, parentNodeEle);
+}
+
+/* called with rendered position */
+function insertSuperSubscriptExistingNode(text, renderedX, renderedY, parentNodeEle){
+	textData = convertLatexStyleSupSub(text);
+	
+	parentID = parentNodeEle.id();
+	
+	parentNodeEle.children().remove();
+	parentNodeEle.removeClass("base");
+	parentNodeEle.addClass("superSubscriptContainer");
+	parentNodeEle.selectify();
+	
+	 var posX  = parentNodeEle.position("x");
+	 var posY = parentNodeEle.position("y");
+	
+	var curTotalwidth = 0;
+	$(textData).each(function(ind, elm){
+		var textNode = { data: { id: getNewID(), parent: parentID , name: elm.text, order: ind}, classes: ['superSubscriptText', 'noSnap', 'templateNoRecalculation']};
+		var textNodeEle = cy.add(textNode);
+		textNodeEle.position({x: posX + curTotalwidth + textNodeEle.width()/2, y: posY});
+				
+		curTotalwidth += textNodeEle.width();
+		
+		var subWidth = 0;
+		var supWidth = 0;
+		if(elm.sub != ""){
+			var subNode = { data: { id: getNewID(), parent: parentID , name: elm.sub, order: ind}, classes: ["subscript", 'noSnap', 'templateNoRecalculation']};
+			var subNodeEle = cy.add(subNode);
+			subWidth = subNodeEle.width();
+			subNodeEle.position({x: posX + curTotalwidth + subWidth/2, y: posY + 4});
+		}
+		if(elm.sup != ""){
+			var superNode ={ data: { id: getNewID(), parent: parentID , name: elm.sup, order: ind}, classes: ["superscript", 'noSnap', 'templateNoRecalculation']};
+			var superNodeEle = cy.add(superNode);
+			supWidth = superNodeEle.width();
+			superNodeEle.position({x: posX + curTotalwidth + supWidth/2, y: posY - 4});
+		}
+		
+		curTotalwidth += Math.max(subWidth, supWidth);
+	});
+	
+	parentNodeEle.renderedPosition();
+	parentNodeEle.renderedPosition({x: renderedX, y: renderedY});
+	
+	return parentNodeEle;
+}
+
+function removeSuperSubscript(node){
+	node.children().remove()
+	node.removeClass("superSubscriptContainer");
+	node.addClass("base");
+	node.selectify();
+}
+
+/** convert LaTeX like Superscript and subscript to an object with the text extracted and sorted */
+function convertLatexStyleSupSub(text){
+
+	var subDelim = "===____===";
+	var superDelim = "===----===";
+	
+	var subParts = text.match(/_{.*?[^\\]}/g);
+	if (subParts){
+		//replace subscript
+		text = text.replace(/_{.*?[^\\]}/g, subDelim);
+	}
+	
+	var superParts = text.match(/\^{.*?[^\\]}/g);
+	if (superParts){
+		//replace superscript
+		text = text.replace(/\^{.*?[^\\]}/g, superDelim);
+	}
+		
+	var parts = [];
+	var textParts = text.split(subDelim);
+	$(textParts).each(function(ind, elm){
+		$(elm.split(superDelim)).each(function(i, e){
+			if(e != "") parts.push(e);
+		});
+	});
+	
+	var wordCounter = -1;
+	var subCounter = 0;
+	var supCounter = 0;
+	var output = [];
+	var prevTextLen = text.length;
+	while(text.length > 0){
+		if(text.startsWith(parts[wordCounter + 1])){
+			wordCounter++;
+			text = text.replace(parts[wordCounter], "");
+			output[wordCounter] = {"text": parts[wordCounter].replace("\\}", "}"), "sup": "", "sub": ""};
+		}
+		if(text.startsWith(subDelim)){
+			text = text.replace(subDelim, "");
+			if(wordCounter < 0){
+				subCounter++;
+				continue;
+			}
+			output[wordCounter].sub = subParts[subCounter].replace(/(_{|}$)/g, "").replace("\\}", "}");
+			subCounter++;
+		}
+		if(text.startsWith(superDelim)){
+			text = text.replace(superDelim, "");
+			if(wordCounter < 0){
+				supCounter++;
+				continue;
+			}
+			output[wordCounter].sup = superParts[supCounter].replace(/(\^{|}$)/g, "").replace("\\}", "}");
+			supCounter++;
+		}
+		// prevent infinite loop
+		if(prevTextLen <= text.length){
+			break;
+		}
+		prevTextLen = text.length;
+	}	
+	return output;
+}
+
+/** check if a string contains LaTeX like superscript or subscript */
+function hasSuperSubScript(text){
+	return text.match(/_{.*?[^\\]}/g) || text.match(/\^{.*?[^\\]}/g);
 }
 
 /** event listeners */
@@ -748,6 +793,24 @@ function addEventListeners(){
 			console.log(cy.$(':selected').renderedPosition());
 		}
 	});*/
+	
+	/*
+	//show cursor position in browser and calculated rendered position in cy canvas
+	$(document).on('click', function(event){
+		console.log("browser x: " + event.clientX);
+		console.log("browser y: " + event.clientY);
+		console.log("cy calc x: " + (event.clientX - $(cy.container()).position().left - parseInt($(cy.container()).css("border-width")) + document.body.scrollLeft));
+		console.log("cy calc y: " + (event.clientY - $(cy.container()).position().top - parseInt($(cy.container()).css("border-width")) + document.body.scrollTop));
+	});
+	
+	
+	*/
+	// show cursor position in rendered cy position
+	/*
+	cy.on('tap', function(event){
+		console.log("cytoscp x: " + event.renderedPosition.x);
+		console.log("cytoscp y: " + event.renderedPosition.y);
+	});*/
 
 	// detect double click or single click with alt
 	cy.on('tap', 'node', function(event){
@@ -767,7 +830,7 @@ function addEventListeners(){
 		switch(event.key){
 			// detect if "del"/"backspace" is pressed on an element of the graph
 			case 'Delete':
-				if(!inTextEditMode){
+				if(!inTextEditMode && !inTemplateEditMode){
 					cy.$(':selected').remove();
 				}
 				break;
@@ -831,8 +894,8 @@ function drop(ev) {
 	var data = ev.dataTransfer.getData("text");
 	var isTemplate = ev.dataTransfer.getData("isTemplate");
 	
-	var renderedLeft = ev.clientX - $(cy.container()).position().left;
-	var renderedTop = ev.clientY - $(cy.container()).position().top;
+	var renderedLeft = (event.clientX - $(cy.container()).position().left - parseInt($(cy.container()).css("border-width")) + document.body.scrollLeft);
+	var renderedTop = (event.clientY - $(cy.container()).position().top - parseInt($(cy.container()).css("border-width")) + document.body.scrollTop);
 
 	if(isTemplate === "true"){
 		var groupName = ev.dataTransfer.getData("group");
