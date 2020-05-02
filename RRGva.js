@@ -45,6 +45,81 @@ function onLoad(){
 	loadTemplateData();
 }
 
+function summarize(){
+	insertSummaryTriangle(cy.$("node:selected"));
+}
+
+function insertSummaryTriangle(summarizedNodes){
+	// get maximum x : maxX.x
+	// get minimum x : minX.x
+	// get y of maximum x : maxX.y
+	// get y of minimum x : minX.y
+	// triangle has 3 nodes and 3 edges
+	// node names: A, B, C
+	// edge names: a, b, c
+	
+	//Ax = minX.x
+	//Ay = minX.y - 15
+	//Bx = maxX.x
+	//By = maxX.y - 15
+	
+	nodeMin = summarizedNodes[0];
+	nodeMax = summarizedNodes[0];
+	
+	$(summarizedNodes).each(function(i, e){
+		if(nodeMin.renderedPosition("x") > e.renderedPosition("x")){
+			nodeMin = e;
+		}
+		if(nodeMax.renderedPosition("x") < e.renderedPosition("x")){
+			nodeMax = e;
+		}
+	});
+	
+	
+	minX = nodeMin.renderedPosition("x");
+	minY = nodeMin.renderedPosition("y"); 
+	maxX = nodeMax.renderedPosition("x");
+	maxY = nodeMax.renderedPosition("y");
+	
+	offset = 40;
+	
+	console.log(minX, minY, maxX, maxY);
+	
+	Vx = maxX - minX;
+	Vy = maxY - minY;
+		
+	Vl = Math.sqrt(Math.pow(Vx, 2) + Math.pow(Vy, 2));
+	
+	console.log(Vl);
+	
+	EVx = (1/Vl) * Vx;
+	EVy = (1/Vl) * Vy;
+	
+	Ax = minX + EVy * offset;
+	Ay = minY - EVx * offset;
+	Bx = maxX + EVy * offset;
+	By = maxY - EVx * offset;
+	
+	console.log("Ax/y: " +  Ax + "/" + Ay);
+	console.log("Bx/y: " +  Bx + "/" + By);
+	
+	height = 40;
+
+	Cx = Bx - (Bx - Ax)/2 + EVy * height;
+	Cy = By - (By - Ay)/2 - EVx * height;
+	
+	console.log("Cx: " + Cx);
+	console.log("Cy: " + Cy);
+	
+	A = addNodeToCy("A", Ax, Ay);
+	B = addNodeToCy("B", Bx, By);
+	C = addNodeToCy("C", Cx, Cy);
+	
+	addEdgeToCy(A.id(), B.id());
+	addEdgeToCy(B.id(), C.id());
+	addEdgeToCy(C.id(), A.id());
+}
+
 function loadText(){
 	readTextArea(document.getElementById("text_input"));
 }
