@@ -56,11 +56,11 @@ function insertSummaryTriangle(summarizedNodes){
 	
 	$(summarizedNodes).each(function(i, e){
 		if(nodeMin.renderedPosition("x") >= e.renderedPosition("x")){
-			if(nodeMin.renderedPosition("y") < e.renderedPosition("y")) return;
+			if(nodeMin.renderedPosition("x") == e.renderedPosition("x") && nodeMin.renderedPosition("y") < e.renderedPosition("y")) return;
 			nodeMin = e;
 		}
 		if(nodeMax.renderedPosition("x") <= e.renderedPosition("x")){
-			if(nodeMax.renderedPosition("y") < e.renderedPosition("y")) return;
+			if(nodeMax.renderedPosition("x") == e.renderedPosition("x") && nodeMax.renderedPosition("y") < e.renderedPosition("y")) return;
 			nodeMax = e;
 		}
 	});
@@ -93,7 +93,7 @@ function insertSummaryTriangle(summarizedNodes){
 	console.log("Ax/y: " +  Ax + "/" + Ay);
 	console.log("Bx/y: " +  Bx + "/" + By);
 	
-	var height = 40;
+	var height = 50;
 
 	var Cx = Bx - (Bx - Ax)/2 + EVy * height;
 	var Cy = By - (By - Ay)/2 - EVx * height;
@@ -115,6 +115,7 @@ function insertSummaryTriangle(summarizedNodes){
 		e.removeClass('base');
 		e.addClass('triangle');
 		e.move({"parent": parentNode.id()});
+		e.select();
 	});
 	$(triEdgeCol).each(function(i, e){
 		e.addClass('triangle');
@@ -262,6 +263,8 @@ function saveTemplate(groupElm, templateName){
 	
 	elements = elements.union(elements.filter(".triangle").connectedEdges(".triangle"));
 	elements = elements.union(elements.filter(".triangle").parent());
+	
+	if(elements.length == 0) return;
 	
 	templates[groupName][templateName] = JSON.stringify(elements.jsons());
 	console.log(templates[groupName][templateName]);
