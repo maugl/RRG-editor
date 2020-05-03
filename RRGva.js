@@ -105,6 +105,7 @@ function insertSummaryTriangle(summarizedNodes){
 	parentNode.removeClass("base");
 	parentNode.addClass("triangle");
 	parentNode.addClass("noSnap");
+	parentNode.addClass("templateNoRecalculation");
 	parentNode.unselectify();
 	
 	var triNodes = [addNodeToCy("A", Ax, Ay), addNodeToCy("B", Bx, By), addNodeToCy("C", Cx, Cy)];
@@ -256,8 +257,14 @@ function saveTemplate(groupElm, templateName){
 	if(templates[groupName] == undefined){
 		templates[groupName] = {};
 	}
-	templates[groupName][templateName] = JSON.stringify(cy.$(":selected, :selected > node").jsons());
-	console.log(templates);
+	
+	var elements = cy.$(":selected, :selected > node");
+	
+	elements = elements.union(elements.filter(".triangle").connectedEdges(".triangle"));
+	elements = elements.union(elements.filter(".triangle").parent());
+	
+	templates[groupName][templateName] = JSON.stringify(elements.jsons());
+	console.log(templates[groupName][templateName]);
 	addTemplateToGroup(groupElm, templateName);
 }
 
@@ -737,9 +744,11 @@ function addEventListeners(){
 	
 	cy.on('select', '.triangle', function(event){
 		event.target.siblings().select();
+		event.target.children().select();
 	});	
 	cy.on('unselect', '.triangle', function(event){
 		event.target.siblings().unselect();
+		event.target.children().unselect();
 	});	
 	cy.on('free', '.triangle:parent', function(event){
 		event.target.children().emit("free");
