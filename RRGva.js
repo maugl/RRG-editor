@@ -50,74 +50,76 @@ function summarize(){
 }
 
 function insertSummaryTriangle(summarizedNodes){
-	// get maximum x : maxX.x
-	// get minimum x : minX.x
-	// get y of maximum x : maxX.y
-	// get y of minimum x : minX.y
-	// triangle has 3 nodes and 3 edges
-	// node names: A, B, C
-	// edge names: a, b, c
 	
-	//Ax = minX.x
-	//Ay = minX.y - 15
-	//Bx = maxX.x
-	//By = maxX.y - 15
-	
-	nodeMin = summarizedNodes[0];
-	nodeMax = summarizedNodes[0];
+	var nodeMin = summarizedNodes[0];
+	var nodeMax = summarizedNodes[0];
 	
 	$(summarizedNodes).each(function(i, e){
-		if(nodeMin.renderedPosition("x") > e.renderedPosition("x")){
+		if(nodeMin.renderedPosition("x") >= e.renderedPosition("x")){
+			if(nodeMin.renderedPosition("y") < e.renderedPosition("y")) return;
 			nodeMin = e;
 		}
-		if(nodeMax.renderedPosition("x") < e.renderedPosition("x")){
+		if(nodeMax.renderedPosition("x") <= e.renderedPosition("x")){
+			if(nodeMax.renderedPosition("y") < e.renderedPosition("y")) return;
 			nodeMax = e;
 		}
 	});
 	
 	
-	minX = nodeMin.renderedPosition("x");
-	minY = nodeMin.renderedPosition("y"); 
-	maxX = nodeMax.renderedPosition("x");
-	maxY = nodeMax.renderedPosition("y");
+	var minX = nodeMin.renderedPosition("x");
+	var minY = nodeMin.renderedPosition("y"); 
+	var maxX = nodeMax.renderedPosition("x");
+	var maxY = nodeMax.renderedPosition("y");
 	
-	offset = 40;
+	var offset = 40;
 	
 	console.log(minX, minY, maxX, maxY);
 	
-	Vx = maxX - minX;
-	Vy = maxY - minY;
+	var Vx = maxX - minX;
+	var Vy = maxY - minY;
 		
-	Vl = Math.sqrt(Math.pow(Vx, 2) + Math.pow(Vy, 2));
+	var Vl = Math.sqrt(Math.pow(Vx, 2) + Math.pow(Vy, 2));
 	
 	console.log(Vl);
 	
-	EVx = (1/Vl) * Vx;
-	EVy = (1/Vl) * Vy;
+	var EVx = (1/Vl) * Vx;
+	var EVy = (1/Vl) * Vy;
 	
-	Ax = minX + EVy * offset;
-	Ay = minY - EVx * offset;
-	Bx = maxX + EVy * offset;
-	By = maxY - EVx * offset;
+	var Ax = minX + EVy * offset;
+	var Ay = minY - EVx * offset;
+	var Bx = maxX + EVy * offset;
+	var By = maxY - EVx * offset;
 	
 	console.log("Ax/y: " +  Ax + "/" + Ay);
 	console.log("Bx/y: " +  Bx + "/" + By);
 	
-	height = 40;
+	var height = 40;
 
-	Cx = Bx - (Bx - Ax)/2 + EVy * height;
-	Cy = By - (By - Ay)/2 - EVx * height;
+	var Cx = Bx - (Bx - Ax)/2 + EVy * height;
+	var Cy = By - (By - Ay)/2 - EVx * height;
 	
 	console.log("Cx: " + Cx);
 	console.log("Cy: " + Cy);
+
+	var parentNode = addNodeToCy("triangleParent");
+	parentNode.removeClass("base");
+	parentNode.addClass("triangle");
+	parentNode.addClass("noSnap");
+	parentNode.unselectify();
 	
-	A = addNodeToCy("A", Ax, Ay);
-	B = addNodeToCy("B", Bx, By);
-	C = addNodeToCy("C", Cx, Cy);
+	var triNodes = [addNodeToCy("A", Ax, Ay), addNodeToCy("B", Bx, By), addNodeToCy("C", Cx, Cy)];
+	var triEdgeCol = [addEdgeToCy(triNodes[0].id(), triNodes[1].id()), addEdgeToCy(triNodes[1].id(), triNodes[2].id()), addEdgeToCy(triNodes[2].id(), triNodes[0].id())];
 	
-	addEdgeToCy(A.id(), B.id());
-	addEdgeToCy(B.id(), C.id());
-	addEdgeToCy(C.id(), A.id());
+	$(triNodes).each(function(i, e){
+		e.removeClass('base');
+		e.addClass('triangle');
+		e.move({"parent": parentNode.id()});
+	});
+	$(triEdgeCol).each(function(i, e){
+		e.addClass('triangle');
+		e.unselectify();
+		e.ungrabify();
+	});
 }
 
 function loadText(){
@@ -203,13 +205,12 @@ function saveTag(groupElm, tagName){
 
 /** puts additional tag into existing groups */
 function addTagToGroup(groupElm, tagName){
-	console.log(groupElm.value);
 	var div_elm = $("<div>" + tagName + "</div>").attr("class", "shelf_content").attr("draggable", "true").attr("ondragstart", "drag(event, '" + $(groupElm).find(".shelf_group_header").val() + "', false)");
 	$(groupElm).append(div_elm);
 }
 
 function addTemplateToGroup(groupElm, templateName){
-	var div_elm = $("<div>" + templateName + "</div>").attr("class", "shelf_content").attr("draggable", "true").attr("ondragstart", "drag(event, '" + $(groupElm).find(".shelf_group_header").val() + "', true)");
+	var div_elm = $("<div>" + templateName + "</div>").attr("class", "shelf_content").attr("draggable", "true").attr("ondragstart", "drag(event, '" + $(groupElm).find(".shelf_group_header").text() + "', true)");
 	$(groupElm).append(div_elm);
 }
 
@@ -274,11 +275,12 @@ function readTextArea(elm){
 		curNode.position("x", XPos);
 		// calculate next node position using the current node for next node position to get even spacing on center
 		XPos = XPos + X_NODE_SPACING + curNode.width()/2;
+		if($("#snapControl").prop("checked")){
+			curNode.emit("free");
+		}	
 	}
 	
-	if($("#snapControl").prop("checked")){
-		cy.snapToGrid();
-	}	
+
 	
 	cy.center();
 }
@@ -402,15 +404,12 @@ function displayTemplate(templateName, groupName, renderedLeft, renderedTop){
 			*/
 			
 			ele.renderedPosition(newRPos);
+			ele.emit("free");
 		}
 	});
 	
 	
-	console.log(newObjects.renderedBoundingBox());
-	
-	if($("#snapControl").prop("checked")){
-		cy.snapToGrid();
-	}	
+	//console.log(newObjects.renderedBoundingBox());
 }
 
 function getNewID(){
@@ -735,13 +734,16 @@ function addEventListeners(){
 			$("#edgeSwitch").prop('disabled', true);
 		}
 	});
-
-	cy.on('select', 'node:child', function(event){
-		event.target.unselectify();
-		event.target.parent().select();
-		event.target.selectify();
-	});
 	
+	cy.on('select', '.triangle', function(event){
+		event.target.siblings().select();
+	});	
+	cy.on('unselect', '.triangle', function(event){
+		event.target.siblings().unselect();
+	});	
+	cy.on('free', '.triangle:parent', function(event){
+		event.target.children().emit("free");
+	});
 	// DEBUG
 	// show position of selected elements on pressing 's'
 	/*	
@@ -770,7 +772,7 @@ function addEventListeners(){
 		console.log("cytoscp y: " + event.renderedPosition.y);
 	});*/
 
-	// detect double click or single click with alt
+	// detect double click
 	cy.on('tap', 'node', function(event){
 		//detect double click
 
@@ -778,6 +780,7 @@ function addEventListeners(){
 		var curNode = event.target;
 		if(curTime - lastClickTime < 500 && curNode == lastClickedNode){
 			// double clicked node
+			if(curNode.hasClass('triangle')) return;
 			openTextChange(curNode);
 		}
 		lastClickTime = curTime;
@@ -789,6 +792,8 @@ function addEventListeners(){
 			// detect if "del"/"backspace" is pressed on an element of the graph
 			case 'Delete':
 				if(!inTextEditMode && !inTemplateEditMode){
+					cy.$(':selected.triangle').siblings().remove();
+					cy.$(':selected.triangle').parent().remove();
 					cy.$(':selected').remove();
 				}
 				break;

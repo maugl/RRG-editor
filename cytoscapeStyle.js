@@ -21,7 +21,8 @@ cyStyle = [
 					'border-color': 'black',
 					'background-color': 'lightgrey'
 				}
-			},
+			},			
+			//subscript superscript
 			{
 				selector: 'node.superSubscriptContainer',
 				style:{
@@ -54,13 +55,44 @@ cyStyle = [
 					'width': 'label',
 					'height': 'label',
 					'events': 'no',
-					'padding': '4, 0, 4, 0',
+					'padding': '4, 0, 4, 0'
 				}
 			},
 			{
 				selector: 'node.subscript, node.superscript',
 				style:{
-					'font-size': '8',
+					'font-size': '8'
+				}
+			},
+			//summary triangles
+			{
+				selector: 'node.triangle',
+				style:{
+					'shape': 'round-rectangle',
+					'width': '20',
+					'height': '20',
+					'background-opacity': '0',
+					'background-color': 'lightgrey',
+					'border-width': '0'
+				}
+			},
+			{
+				selector: 'node.triangle:selected',
+				style:{
+					'background-opacity': '0.5'
+				}
+			},
+			{
+				selector: 'node.triangle:parent',
+				style:{
+					"padding": "0, 0, 0, 0",
+				}		
+			},
+			{
+				selector: 'edge.triangle',
+				style:{
+					'line-cap': 'round',
+					'events': 'no'
 				}
 			},
 			//edges
