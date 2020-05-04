@@ -1,10 +1,5 @@
 //TODO sometimes right-click-drag off node does not work...
-//TODO add triangle for summarizing tree under
 //TODO sometimes edges do not render when inserting template (when clicking on edge it is rendered)
-
-
-//TODO fix super subscript with templates
-//TODO fix super subscript with edges
 
 $( document ).ready(function(){
 	onLoad();
@@ -709,6 +704,7 @@ function hasSuperSubScript(text){
 function addEventListeners(){
 	// create new node / edge by right click dragging off a node
 	cy.on('cxttapend', 'node', function(event){
+		if(event.target.hasClass("triangle") && event.target.isParent()) return;
 		if(dragoutToggle){
 			//detect if end of drag is on node, then create edge, else create new node
 			var node = event.target;
@@ -727,13 +723,16 @@ function addEventListeners(){
 		}
 	});
 	cy.on('cxttapstart', 'node', function(event){
+		if(event.target.hasClass("triangle") && event.target.isParent()) return;
 		dragoutToggle = false;
 	});
 	cy.on('cxtdragout', 'node', function(event){
+		if(event.target.hasClass("triangle") && event.target.isParent()) return;
 		dragoutToggle = true;
 		dragOverNode = undefined;
 	});
 	cy.on('cxtdragover', 'node', function(event){
+		if(event.target.hasClass("triangle") && event.target.isParent()) return;
 		dragOverNode = event.target;
 	});
 	cy.on('select', 'edge', function(event){
