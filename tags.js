@@ -8,7 +8,9 @@ var tags = {
           "CORE",
           "NUC",
           "PP",
-          "P"
+          "P",
+          "PrCS",
+          "LDP"
      ],
      "Operators": [
           "IF",
